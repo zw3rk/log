@@ -1,0 +1,5014 @@
+#+hugo_base_dir: .
+
+#+author:
+#+hugo_custom_front_matter: :author "Moritz"
+# Apparently the =tale= theme doesn't like multiple authors, so we have to go through the custom front matter ...
+
+* About
+:PROPERTIES:
+:EXPORT_HUGO_SECTION: about
+:EXPORT_FILE_NAME: _index
+:EXPORT_HUGO_MENU: :menu main
+:ID:       D374F928-7F38-4CE6-8D23-25B3A60E178D
+:END:
+
+This little space is where I'm going to keep logbook like entries
+about all the little things that happen from time to time. If you find
+something you like or have questions, please let me know, I'd be happy
+to hear about it.
+
+* Posts
+:PROPERTIES:
+:EXPORT_HUGO_SECTION: posts
+:ID:       7CC42E5B-1813-4DF0-B25D-9760A7DA2D7E
+:END:
+
+** Hello World & A Cross Compilation Survey
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-04-20-hello-world-and-a-cross-compilation-survey
+   :EXPORT_DATE: <2017-04-20>
+   :ID:       651C9FDD-27C4-4DC0-9C0D-26AA0671731D
+   :END:
+
+we are *zw3rk*, the haskell focused team at [[https://lichtzwerge.com][lichtzwerge.com]]. Our mission
+is to make haskell a viable platform for mobile development.
+
+What does *zw3rk* stand for you might ask? It's a simple play on words,
+combining the German word Zwerg (engl. dwarf/gnome) and Werk (engl.
+factory) with the almighty three!
+
+The current state of ghc for /mobile development/ (Android and iOS) via
+cross compilation is not as smooth as we'd like. Together with
+[[https://obsidian.systems][obsidian.systems]] we intend to /improve the status quo considerably/!
+
+To kick this off, we have prepared a [[https://goo.gl/forms/VBUF0dQDgVm7hjrv2][survey regarding cross
+compilation]] with ghc (not just for mobile development) and would like
+to invite you to help us understand the needs of the community better.
+Please follow [[https://goo.gl/forms/VBUF0dQDgVm7hjrv2][this link]] to participate! *Please note: the survey has
+ended on May 4th.*
+
+To keep up to date with the development, you can follow us here on
+medium, on [[https://github.com/zw3rk][github]], or on [[http://twitter.com/zw3rktech][twitter]].
+
+** Building iconv for Android
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-03-building-iconv-for-android
+   :EXPORT_DATE: <2017-05-03>
+   :ID:       3791BF01-B3C8-4B56-8BEA-9B74F98E3207
+   :END:
+
+iconv (*i*nternational *con*version) is provided by =libiconv=, and
+available through *GHC.IO.Encoding* in the *base* package.
+
+As this is an external dependency, it needs to be available for a build
+of GHC to succeed. In the case of cross compiling GHC for iOS, we can
+use the =libiconv.dylib= provided by the iOS sdk. For android however,
+we'll need to build =libiconv.so=.
+
+Building =libiconv= version =1.15= for =aarch64/android= on =macOS= via
+androids ndk toolchain can be done as follows:
+
+#+BEGIN_EXAMPLE
+  curl -O -L https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.15.tar.gz
+  tar xzf libiconv-1.15.tar.gz
+  cd libiconv-1.15
+  export ANDROID_HOST=aarch64-linux-android
+  export ANDROID_BUILD=darwin-x86_64
+  export ANDROID_ARCH=arm64
+  export ANDROID_NDK=$HOME/Library/Android/sdk/ndk-bundle
+  export ANDROID_VERSION=24
+  export ANDROID_TOOLCHAIN_VERSION=4.9
+  export ANDROID_SYSROOT=$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-$ANDROID_ARCH
+  export CFLAGS=--sysroot=$ANDROID_SYSROOT
+  export CPPFLAGS=--sysroot=$ANDROID_SYSROOT
+  export AR=$ANDROID_HOST-ar
+  export RANLIB=$ANDROID_HOST-ranlib
+  export PATH=$ANDROID_NDK/toolchains/$ANDROID_HOST-$ANDROID_TOOLCHAIN_VERSION/prebuilt/$ANDROID_BUILD/bin:$PATH
+  ./configure --host=$ANDROID_HOST --with-sysroot=$ANDROID_SYSROOT
+  make
+#+END_EXAMPLE
+
+Building on linux should be similar.
+
+A slightly more elaborate script to build =libiconv= for =armv7= and
+=aarch64= can be found in the =zw3rk/ghc-build-scripts= repository as
+=build-libiconv=. The script reduces downloading and build =libiconv=
+for android to:
+
+#+BEGIN_EXAMPLE
+  ./build-libiconv --host=darwin-x86_64 --prefix=libiconv-prefix
+#+END_EXAMPLE
+
+and places the build products into
+=libiconv-prefix/{aarch64-linux-android,arm-linux-androideabi}=.
+
+/Note: The/ =build-libiconv= /script builds the static library/
+=libiconv.a= /which can be linked into the binary. If you want the
+shared object, change the line that reads/
+=--enable-shared=no --enable-static=yes= /into/
+=--enable-shared=yes --enable-static=yes=/./
+
+** Cross Compilation Survey Results
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-09-cross-compilation-survey-results
+   :EXPORT_DATE: <2017-05-09>
+   :ID:       8B2E72A3-D4FD-41E1-B79E-FE54D608F23C
+   :END:
+
+About two weeks ago together with [[https://obsidian.systems][obsidian.systems]], [[http://um.com/@zw3rk/hello-world-a-cross-compilation-survey-890cb95029d7][we asked]] about
+cross compiling haskell and 229 people responded to our survey.
+
+The majority (85%) noted that they would like to use GHC as a cross
+compiler but do not yet. The targets for cross compilation are *arm*
+(66%), *aarch64* (64%) and *x86_64* (42%) for *android* (62%), *linux* (60%)
+and *iOS* (43%).
+
+Build architecture is almost exclusively *x86_64* (98%), with *linux*
+(82%) being twice as popular as *macOS* (38%), and *windows* a third at
+(16%).
+
+Onto the reasons for not using GHC as a cross compiler. With *lack of
+clear instructions* (80%), and *building the cross compiler is too hard*
+(60%), a clear lack of documentation is showing. In addition to the
+lack of *Template Haskell* (27%), there were also a number of *other*
+reasons mentioned (13%), ranging from debugging, through specific bugs
+in libraries, to better tooling support.
+
+The *Other thoughts* question received 40 distinct answers. With offers
+to help, mentioning of existing approaches ([[https://github.com/ghc-ios][ghc-ios]],
+[[https://github.com/albertov/ghc-cross-compiler-windows-x86][ghc-cross-compiler-windows-x86]], [[https://github.com/GaloisInc/HaLVM][HaLVM]]), additional features (nix), and
+experience reports.
+
+If you want to get involved (please do!), [[mailto:hello@zw3rk.com][send us an email]]!
+
+The results confirm that what we have been working on (Template
+Haskell and Tooling) aligns with the needs of the community (or at
+least those who participated in the survey). It also highlights the
+need for better documentation, which we will try to address as well
+(e.g. see [[https://medium.com/@zw3rk/building-iconv-for-android-e3581a52668f][Building iconv for android]]).
+
+Follow us on medium, [[https://github.com/zw3rk][github]], [[http://twitter.com/zw3rktech][twitter]], and [[http://eepurl.com/cGh3Mb][subscribe to the mailing
+list]].
+
+** Quick Headless Raspberry Pi Setup
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-10-quick-headless-raspberry-pi-setup
+   :EXPORT_DATE: <2017-05-10>
+   :ID:       22A42AED-EBC5-4F1B-9693-5B165F632ED6
+   :END:
+
+To run any software on your [[http://amzn.to/2qcKh6m][Raspberry Pi]], it clearly needs to be set
+up. However, without an HDMI capable device or a USB keyboard we won't
+get anywhere without a headless setup. You will need a DHCP capable
+router, a [[http://amzn.to/2qcKh6m][Raspberry Pi]], a [[http://amzn.to/2qcTxY4][SD card]], and a [[http://amzn.to/2qO1X5f][SD card reader/writer]] (if you
+computer doesn't already provide one).
+
+We'll use [[https://www.raspberrypi.org/downloads/raspbian/][Raspbian jessie lite]] and [[https://etcher.io/][etcher]]. Putting Raspbian onto the
+SD card should present no issues. Simply download etcher and Raspbian,
+and follow the etcher instructions.
+
+Recent versions of Raspbian have disabled access via SSH by default,
+in [[https://www.raspberrypi.org/blog/a-security-update-for-raspbian-pixel/][an attempt to prevent the proliferation of Raspberry Pis joining
+botnets]].
+
+#+BEGIN_QUOTE
+  SSH disabled by default; can be enabled by creating a file with name
+  “ssh” in boot partition
+#+END_QUOTE
+
+/Source:/ [[http://downloads.raspberrypi.org/raspbian/release_notes.txt][/Raspbian release notes 2016--11--25/]]
+
+Thus you will need =/boot/ssh=; simply touching that file should be
+sufficient.
+
+#+BEGIN_EXAMPLE
+  touch /Volumes/boot/ssh
+#+END_EXAMPLE
+
+should do on macOS. /Note: if you don't see/ =/Volumnes/boot= /try
+re-inserting the SD card./
+
+Eject the SD card, and boot up your Raspberry Pi.
+
+The Raspberry Pi should come up as =raspberrypi= on your network,
+depending on your setup, logging in via SSH might be as simple as
+
+#+BEGIN_EXAMPLE
+  ssh pi@raspberrypi
+#+END_EXAMPLE
+
+Or you might have to [[https://www.raspberrypi.org/documentation/remote-access/ssh/unix.md][figure out the Raspberry Pis ip address]] from your
+router. The default password is *raspberry* and you are strongly advised
+to change it upon logging in for the first time using =passwd=.
+
+You can now configure your Raspberry Pi to your liking using
+
+#+BEGIN_EXAMPLE
+  sudo raspi-config
+#+END_EXAMPLE
+
+I would also suggest to install any pending updates:
+
+#+BEGIN_EXAMPLE
+  sudo aptitude update
+  sudo aptitude upgrade
+#+END_EXAMPLE
+
+With all that in place you can enjoy playing with your Raspberry Pi.
+Next we will create a cross compilation toolchain and cross compile
+software to run on the Raspberry Pi.
+
+---
+
+If you also have a tontec mz61581 tft display, you might want to add
+
+#+BEGIN_EXAMPLE
+  dtparam=spi=on
+  dtoverlay=mz61581
+#+END_EXAMPLE
+
+to your =/boot/config.txt= and append =fbcon=map:10= to your
+=/boot/cmdline.txt= to enable the the display during the boot process.
+
+You might also need to download the latest [[https://www.itontec.com/mz61581-overlay.dtb][mz61581-overlay.dbt]] from
+[[https://www.itontec.com][itontec]] and place it into =/boot/overlays=.
+
+** Making a Raspbian Cross Compilation SDK
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-11-making-a-raspbian-cross-compilation-sdk
+   :EXPORT_DATE: <2017-05-11>
+   :ID:       913F36E8-D476-4D08-ACD4-41D2D646F721
+   :END:
+
+After setting up your [[https://medium.com/@zw3rk/quick-headless-raspberry-pi-setup-52ad6dd312c4][Raspberry Pi with Raspbian jessie lite]], this
+time we will now create the necessary cross compilation Software
+Development Kit (SDK). The SDK will contain the toolchain, headers and
+libraries to compile binaries compatible with the Raspberry Pi on a
+different (more powerful) machine (e.g. your laptop or desktop
+computer).
+
+While the [[http://amzn.to/2qdnoiW][Raspberry Pi 2]] and [[http://amzn.to/2qdnNCj][Raspberry Pi 3]] are =armv7= and =aarch64= the
+old Raspberry Pi 1 and [[http://amzn.to/2pToU8W][Raspberry Zero]] are =armv6=; to simplify matters
+[[https://www.raspberrypi.org/downloads/raspbian/][Raspbian]] is compiled for =armv6hf+vfpv2= to have a single distribution
+supporting all. The target's triple is then =arm-none-linux-gnueabihf=.
+
+We will therefore create a SDK targeting =armv6= and the programs built
+with it should be compatible with all Raspberry Pis. The downside is
+that programs built with this toolchain will not be able to take
+advantage of advanced features only available in the Raspberry Pi 2
+and 3.
+
+It is instructive to build the SDK by hand to better understand the
+how everything fits together, and be able to make educated adjustments
+to the SDK's toolchain, headers and libraries. For our SDK we will
+focus on =clang= from the [[https://llvm.org][llvm project]] as our underlying compiler for
+our toolchain as we will later use GHC's LLVM cross compilation
+backend, and want to keep things simple and consistent. You can find a
+[[https://github.com/zw3rk/scripts/blob/master/make-sdk][script to build the SDK]] in our [[https://github.com/zw3rk/scripts][zw3rk/scripts]] GitHub repository.
+
+*** The SDK
+    :PROPERTIES:
+    :ID:       3485D35D-9BD0-42CB-998C-587C16F04751
+    :END:
+
+What is a SDK and why do we need one? When compiling on a more powerful
+(or better supported) /build/ machine to a different one, we need a
+*toolchain* that contains a *compiler* that can /target/ the machine
+that will finally /host/ the resulting binary. The toolchain will also
+contain a *linker*, to be able to link object files that are foreign to
+the build machine as well as an *archiver*, and a tool to extract
+symbols from those object files. In addition to the toolchain, we also
+need access to the *headers* and *libraries* on the /host/, against we
+want to link. Let us start out by creating a folder =raspbian-sdk= for
+the SDK, with two subfolders =prebuilt= (which will hold the toolchain)
+and =sysroot= (which will hold the headers and libraries).
+
+#+BEGIN_EXAMPLE
+  mkdir -p raspbian-sdk/{prebuilt,sysroot}
+#+END_EXAMPLE
+
+*** The Compiler
+    :PROPERTIES:
+    :ID:       98328748-7EFA-4D80-BCAD-F08651203515
+    :END:
+
+As mentioned above, we'll use =clang= from the [[https://llvm.org][llvm
+project]] as our compiler. You can obtain a copy from their
+[[http://releases.llvm.org/download.html][release download website]]. At
+the time of writing /LLVM 4.0.0/ is the latest release. =clang= is a
+multi-target compiler, which means that the same compiler can produce
+object code for different architectures. This can be controlled via the
+=--target= flag.
+
+LLVM can be unpacked and installed into =raspbian-sdk/prebuilt= as
+follows:
+
+#+BEGIN_EXAMPLE
+  curl -L -O http://releases.llvm.org/4.0.0/clang+llvm-4.0.0-x86_64-apple-darwin.tar.xz
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  xz -d clang+llvm-4.0.0-x86_64-apple-darwin.tar.xz
+  tar xf clang+llvm-4.0.0-x86_64-apple-darwin.tar \
+      -C "/path/to/raspbian-sdk/prebuilt" --strip-components=1
+#+END_EXAMPLE
+
+/Note: This will install the/ =clang+llvm= /for macOS, the commands for
+linux would be similar./
+
+*** The Linker and Other Utilities
+    :PROPERTIES:
+    :ID:       21962E27-32A4-4B08-9120-80E70BD9F5E8
+    :END:
+
+With the compiler in hand, we can now produce object files =.o=, but
+when combining multiple object files, these need to be linked together.
+To illustrate this, assume two object files =a.o= and =b.o=. Object file
+=b.o= refers to a function =f= in =a.o=. It does so via an external
+symbol reference (by name). The linker will, when combining =a.o= and
+=b.o=, look for the symbol with the specified name in =a.o= and resolve
+the reference.
+
+[[https://www.gnu.org/software/binutils/][GNU Binutils]] provide a suite
+of tools containing not only one *linker* (/ld.bfd/), but a second more
+modern one (/ld.gold/) as well. In addition to the linkers, binutils
+also contain an *archiver* /(ar)/, a *symbol listing tool* (/nm/), and a
+few other tools. The latest version can be obtained from
+[[http://ftp.gnu.org/gnu/binutils/][their ftp server]], the latest
+version as of this writing is /binutils-2.28/.
+
+As this is a source distribution, you will need to build binutils
+yourself.
+
+#+BEGIN_EXAMPLE
+  ./configure --prefix="/path/to/raspbian-sdk/prebuilt" \
+              --target=arm-linux-gnueabihf \
+              --enable-gold=yes \
+              --enable-ld=yes \
+              --enable-targets=arm-linux-gnueabihf \
+              --enable-multilib \
+              --enable-interwork \
+              --disable-werror \
+              --quiet
+  make && make install
+#+END_EXAMPLE
+
+This should configure, compile and install the suite of binutils into
+=/path/to/raspbian-sdk/prebuilt=. While binutils can be configured to be
+multi-target, I advise against doing so, as it requires passing the
+target to tools when there is ambiguity. This becomes more complicated
+in cases where the tools are called indirectly.
+
+*** The Headers and Libraries
+    :PROPERTIES:
+    :ID:       68F841CE-F65E-423D-AEC7-5F4888888183
+    :END:
+
+We finally need to get hold of a copy of the headers and libraries from
+the Raspberry Pi. We need those so that the compiler has access to the
+headers and libraries available on the Raspberry Pi. /This also means,
+that if you install new libraries (with their headers), you will need to
+refresh your SDK; make sure to install the/ =-dev= /packages if needed./
+
+To copy the headers and libraries from the Raspberry Pi to the build
+machine, we will use =rsync=. It is not available by default in raspbian
+jessie lite and needs to be installed:
+
+#+BEGIN_EXAMPLE
+  ssh pi@raspberrypi 'sudo aptitude install -y rsync'
+#+END_EXAMPLE
+
+With that in place, we can start to copy the data to our build system:
+
+/Note: as/ [[https://medium.com/u/e51ad21a2143][/Rob van den Bogaard/]]
+/kindly/
+[[https://medium.com/@robvandenbogaard/maybe-good-to-note-that-on-osx-the-built-in-rsync-command-doesnt-accept-multiple-remote-source-343773b59d8b][/pointed
+out/]]/, the/ =rsync= /that comes with macOS Sierra 10.12 does not
+support multiple/ */remote sources/*/. Using the/ =rsync= /installed
+via/ =brew install rsync= /however does./
+
+#+BEGIN_EXAMPLE
+  mkdir sysroot
+  rsync -rzLR --safe-links \
+        pi@raspberrypi:/usr/lib/arm-linux-gnueabihf \
+        pi@raspberrypi:/usr/lib/gcc/arm-linux-gnueabihf \
+        pi@raspberrypi:/usr/include \
+        pi@raspberrypi:/lib/arm-linux-gnueabihf \
+        sysroot/
+#+END_EXAMPLE
+
+Running =rsync= at a later time again, has the benefit of copying over
+only the new data, to keep your local copy in sync with the one on the
+Raspberry Pi. /You should run the/ =rsync= /command in the/ =sysroot=
+/folder again, if you installed additional libraries on your Raspberry
+Pi, against which you want to link./
+
+*** Using the SDK
+    :PROPERTIES:
+    :ID:       EE4CE51D-EDD8-4F34-97AD-8AB783AD15D8
+    :END:
+
+Assuming we now have the following structure:
+
+#+BEGIN_EXAMPLE
+  ├── prebuilt
+  │   ├── arm-linux-gnueabihf
+  │   ├── bin
+  │   ├── include
+  │   ├── lib
+  │   ├── libexec
+  │   └── share
+  └── sysroot
+      ├── lib
+      └── usr
+#+END_EXAMPLE
+
+/(After unpacking/ =clang+llvm= /into/ =prebuilt= /and setting/
+=prebuilt= /as the target for/ =binutils=/)/
+
+We can compile a simple =hello.c= with the following content
+
+#+BEGIN_EXAMPLE
+  #include <stdio.h>
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  int
+  main(int argc, char ** argv) {
+    printf("Hello World!\n");
+    return 0;
+  }
+#+END_EXAMPLE
+
+via our cross compilation SDK for =arm-linux-gnueabihf= like so:
+
+#+BEGIN_EXAMPLE
+  export COMPILER_PATH=sysroot/usr/lib/gcc/arm-linux-gnueabihf/4.9
+  ./prebuilt/bin/clang --target=arm-linux-gnueabihf \
+                       --sysroot=./sysroot \
+                       -isysroot ./sysroot \
+                       -L${COMPILER_PATH} \
+                       --gcc-toolchain=./prebuilt/bin \
+                       -o hello hello.c
+#+END_EXAMPLE
+
+Finally copy =hello= over to the Raspberry Pi
+
+#+BEGIN_EXAMPLE
+  scp hello pi@raspberrypi:
+#+END_EXAMPLE
+
+and execute it
+
+#+BEGIN_EXAMPLE
+  ssh pi@raspberrypi ./hello
+#+END_EXAMPLE
+
+*** Conclusion
+    :PROPERTIES:
+    :ID:       255BCB87-7A2F-484C-8F16-6F6B24962CB7
+    :END:
+
+We have seen that building and using a cross compilation SDK is not as
+simple as =clang --target arm-linux-gnueabihf -o hello hello.c=, but is
+still something manageable. The tricky part is getting all the compiler
+flags right.
+
+Luckily we can hide all of them with a simple shell wrapper. Putting
+
+#+BEGIN_EXAMPLE
+  #!/bin/bash
+  BASE=$(dirname $0)
+  SYSROOT="${BASE}/../../sysroot"
+  TARGET=arm-linux-gnueabihf
+  COMPILER_PATH="${SYSROOT}/usr/lib/gcc/${TARGET}/4.9"
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  exec env COMPILER_PATH="${COMPILER_PATH}" \
+       "${BASE}/clang" --target=${TARGET} \
+                       --sysroot="${SYSROOT}" \
+                       -isysroot "${SYSROOT}" \
+                       -L"${COMPILER_PATH}" \
+                       --gcc-toolchain="${BASE}" \
+                       "$@"
+#+END_EXAMPLE
+
+into =prebuilt/bin/arm-linux-gnueabihf-clang= and making it executable
+with
+
+#+BEGIN_EXAMPLE
+  chmod +x prebuilt/bin/arm-linux-gnueabihf-clang
+#+END_EXAMPLE
+
+allows us to simply say
+
+#+BEGIN_EXAMPLE
+  prebuilt/bin/arm-linux-gnueabihf-clang -o hello hello.c
+#+END_EXAMPLE
+
+to compile =hello.c= on our /build/ machine, into an executable that can
+run on the /host/.
+
+** A Haskell Cross Compiler for Raspberry Pi
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-16-a-haskell-cross-compiler-for-raspberry-pi
+   :EXPORT_DATE: <2017-05-16>
+   :ID:       E305F9CA-459D-491B-9A9F-73FB49E94211
+   :END:
+
+After [[https://medium.com/@zw3rk/quick-headless-raspberry-pi-setup-52ad6dd312c4][setting up our Raspberry Pi]] and [[https://medium.com/@zw3rk/raspbian-cross-compilation-toolchain-830fe56d75ba][building the raspbian SDK]]. Today
+we will build a Haskell cross compiler (GHC) for the [[http://amzn.to/2pykYYv][Raspberry Pi]], to
+be used together with the SDK.
+
+We will use a custom GHC branch, as not all necessary patches have yet
+landed yet in the upstream repository. Alternatively you can use the
+official GHC =master= branch and apply the patches manually with =arc
+patch=.
+
+*** Prerequisites
+    :PROPERTIES:
+    :ID:       954D105B-4B6B-4ED6-B6AD-E12CF8753DCD
+    :END:
+
+Make sure you have a =ghc= and =cabal= installed. You can download a
+recent version from [[http://downloads.haskell.org/~ghc/8.0.2/][downloads.haskell.org]]. You will also need =alex= and
+=happy=:
+
+#+BEGIN_EXAMPLE
+  cabal install alex happy
+#+END_EXAMPLE
+
+This should produce =~/.cabal/bin/alex= and =~/.cabal/bin/happy=.
+
+Due to an incompatibility between the /latest version/ of libffi (/from
+2014/), and recent llvm versions, which only understand the unified arm
+assembly syntax, we need to build a custom libffi version. With the
+raspbian SDK's =prebuilt/bin= in =PATH= this should be as simple as:
+
+#+BEGIN_EXAMPLE
+  git clone https://github.com/libffi/libffi.git
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  cd libffi
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  ./autogen.sh
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  CC="arm-linux-gnueabihf-clang" CXX="arm-linux-gnueabihf-clang" \
+          ./configure \
+          --prefix=/path/to/libffi/arm-linux-gnueabihf \
+          --host=arm-linux-gnueabihf \
+          --enable-static=yes --enable-shared=yes
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  make && make install
+#+END_EXAMPLE
+
+This will build and place the =libffi= header and libraries into
+=/path/to/libffi/arm-linux-gnueabihf=.
+
+*** Building GHC
+    :PROPERTIES:
+    :ID:       4364E97F-BCFC-4562-8BB9-FC0CA6780A18
+    :END:
+
+Ensure that =ghc=, =alex=, =happy=, =cabal=, as well as your Raspbian
+SDK are in your =PATH=. If not, export =PATH= appropriately:
+
+#+BEGIN_EXAMPLE
+  export PATH=$HOME/.cabal/bin:$PATH
+  export PATH=/path/to/bin/ghc:$PATH
+  export PATH=/path/to/raspbian-sdk/prebuilt/bin:$PATH
+#+END_EXAMPLE
+
+Next, we will obtain the patched GHC source via =git=:
+
+#+BEGIN_EXAMPLE
+  git clone --recursive git://git.haskell.org/ghc.git
+  cd ghc
+  git remote add zw3rk https://github.com/zw3rk/ghc.git
+  git fetch zw3rk
+  git checkout zw3rk/my-ghc -b my-ghc
+  git submodule update --init --recursive
+#+END_EXAMPLE
+
+/Note: the custom/ =my-ghc= /branch contains a few patches
+(/[[https://phabricator.haskell.org/D3352][/D3352/]]/,/
+[[https://phabricator.haskell.org/D3443][/D3443/]], //
+[[https://phabricator.haskell.org/D3448][/D3448/]]/,/
+[[https://phabricator.haskell.org/D3502][/D3502/]]/,/
+[[https://phabricator.haskell.org/D3579][/D3579/]]/,/
+[[https://phabricator.haskell.org/D3591][/D3591/]]/) on top of the GHC
+master branch that are not yet landed./
+
+Building =GHC= for =arm-linux-gnueabihf= and /installing it alongside/
+=clang= /in the raspbian sdk/ should require only the following now
+
+#+BEGIN_EXAMPLE
+  # set paths
+  export RASPBIAN_SDK=/path/to/raspbian-sdk/
+  export LIBFFI=/path/to/libffi/arm-linux-gnueabihf
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  # Boot up the build system
+  ./boot
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  # Configure a GHC that targets the Raspberry Pi
+  ./configure --target=arm-linux-gnueabihf \
+              --prefix=$RASPBIAN_SDK/prebuilt \
+              --with-system-libffi \
+              --with-ffi-includes=$LIBFFI/include \
+              --with-ffi-libraries=$LIBFFI/lib
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  # Create a mk/build.mk and set the BuildFlavour to quick-cross
+  sed -E "s/^#(BuildFlavour[ ]+= quick-cross)$/\1/" \
+      mk/build.mk.sample > mk/build.mk
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  # Compile and install ghc
+  make -j && make install
+#+END_EXAMPLE
+
+This will likely take approximately 30--60 minutes depending on your
+hardware. If everything went right, you will find
+=arm-linux-gnueabihf-ghc= in =/path/to/raspbian-sdk/prebuilt/bin=.
+
+We will wrap up by trying out our brand new Haskell cross compiler.
+
+*** Compiling =Hello World=
+    :PROPERTIES:
+    :ID:       70E76339-446A-4BE6-B313-49EC2FCD1813
+    :END:
+
+Let us create a very simple =Hello.hs= similar to the =hello.c= we
+created when trying out =clang= from the SDK's toolchain.
+
+#+BEGIN_EXAMPLE
+  module Main where
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  main :: IO ()
+  main = putStrLn "Hello World!"
+#+END_EXAMPLE
+
+Compiling it should be as trivial as saying
+
+#+BEGIN_EXAMPLE
+  arm-linux-gnueabihf-ghc Hello.hs
+#+END_EXAMPLE
+
+Assuming that =/path/to/raspbian-sdk/prebuilt/bin= is still in your
+=PATH=.
+
+*** Running Hello World
+    :PROPERTIES:
+    :ID:       0A7BDB20-A828-439F-8EF9-B360C7E9B56C
+    :END:
+
+All that is left now, is to copy the binary over to the Raspberry Pi
+
+#+BEGIN_EXAMPLE
+  scp Hello pi@raspberrypi:
+#+END_EXAMPLE
+
+and executing it
+
+#+BEGIN_EXAMPLE
+  ssh pi@raspberrypi ./Hello
+#+END_EXAMPLE
+
+Next we will look at Haskell's package management with Cabal with an eye
+on cross compilation.
+
+** The Haskell Cabal and Cross Compilation
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-17-the-haskell-cabal-and-cross-compilation
+   :EXPORT_DATE: <2017-05-17>
+   :ID:       2216B462-553D-47F5-9B13-6B39B3F772BE
+   :END:
+
+Once you want to tap into the vast ecosystem of haskell libraries, you
+will run into cabal and hackage in one way or the other /(stack and
+stackage build upon cabal as well)/. Over the last few days we [[https://medium.com/@zw3rk/quick-headless-raspberry-pi-setup-52ad6dd312c4][set up]]
+the [[http://amzn.to/2roKzUZ][Raspberry Pi]], built the [[https://medium.com/@zw3rk/making-a-raspbian-cross-compilation-sdk-830fe56d75ba][Raspbian SDK]] and the [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94][Haskell cross
+compiler]]. Today we will look at what cabal is, and how to use it for
+cross compilation.
+
+*** Cabal, cabal-install, cabal and Hackage
+    :PROPERTIES:
+    :ID:       08747E48-4FCD-4C06-BC00-3AD70C058B13
+    :END:
+
+The *C*ommon *A*rchitecture for *B*uilding *A*pplications and
+*L*ibraries consists of [[https://www.haskell.org/cabal/][/Cabal/]] the
+library. /Cabal/ the library contains the logic how to build a haskell
+package from a =.cabal= file. /cabal-install/ is the cabal package, that
+provides the =cabal= command.
+[[https://hackage.haskell.org/][/Hackage/]] finally is the haskell
+package repository.
+
+As an end user you will mostly deal with =cabal= the command line
+interface. This will also take care of downloading dependencies and
+building them as required.
+
+*** Cross Compiling with =cabal=
+    :PROPERTIES:
+    :ID:       B4B0ECB9-4949-46E1-989E-439B4B2F74F9
+    :END:
+
+cabal is not yet very cross compilation agnostic. As cross compilation
+has been mostly a niche, cross compiling packages with cabal needs some
+hand-holding.
+
+By default =cabal= will use a non-prefixed toolchain, which results in
+the library being compiled for the /build/ machine. In the cross
+compilation setting, we want to compile for the /host/ machine. That is
+the machine that will /host/ the final binary, and not the machine that
+/builds/ the binary.
+
+Luckily =cabal= provides the necessary arguments to pass in the
+toolchain we want to use /(I've seen this first in the/
+[[https://github.com/ghc-ios/ghc-ios-scripts][/ghc-ios-scripts/]]/)/.
+
+For our =arm-linux-gnueabihf-ghc= we
+[[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94][built
+yesterday]] we want to effectively call =cabal= with the following
+arguments:
+
+#+BEGIN_EXAMPLE
+  --builddir=dist/arm-linux-gnueabihf
+#+END_EXAMPLE
+
+to put any build product into a separate directory for each
+architecture. And
+
+#+BEGIN_EXAMPLE
+  --with-ghc=arm-linux-gnueabihf-ghc
+  --with-ghc-pkg=arm-linux-gnueabihf-ghc-pkg
+  --with-gcc=arm-linux-gnueabihf-clang
+  --with-ld=arm-linux-gnueabihf-ld
+#+END_EXAMPLE
+
+to teach cabal about our toolchain. cabal may call =hsc2hs= as well,
+passing
+
+#+BEGIN_EXAMPLE
+  --hsc2hs-options=--cross-compile
+#+END_EXAMPLE
+
+when compiling ensures that =hsc2hs=
+[[http://downloads.haskell.org/~ghc/master/users-guide/utils.html#hsc2hs-cross][operates
+in cross compilation mode]].
+
+Finally =cabal= may invoke =configure=. Therefore we pass
+
+#+BEGIN_EXAMPLE
+  --configure-option=--host=arm-linux-gnueabihf
+#+END_EXAMPLE
+
+as well, when running =cabal configure= or =cabal install=, so that
+configure scripts can rely on the proper =--host= flag.
+
+Passing all this by hand is truly annoying. Therefore let us create a
+wrapper script for this /(again credit for this goes to/
+[[https://github.com/ghc-ios/ghc-ios-scripts][/ghc-ios-scripts/]]/,
+where I saw this approach first --- we will use a slightly modified
+version here)./
+
+Let us create a script called =cabal-wrapper= with the following
+content:
+
+#+BEGIN_EXAMPLE
+  #!/bin/bash
+
+  name=${0##*/}
+  cmd=${name##*-}
+  target=${name%-*}
+
+  fcommon="--builddir=dist/${target}"
+  fcompile=" --with-ghc=${target}-ghc"
+  fcompile+=" --with-ghc-pkg=${target}-ghc-pkg"
+  fcompile+=" --with-gcc=${target}-clang"
+  fcompile+=" --with-ld=${target}-ld"
+  fcompile+=" --hsc2hs-options=--cross-compile"
+  fconfig="--disable-shared --configure-option=--host=${target}"
+
+  case $1 in
+    configure|install) flags="${fcommon} ${fcompile} ${fconfig}" ;;
+    build)             flags="${fcommon} ${fcompile}" ;;
+    list|info|update)  flags="" ;;
+    "")                flags="" ;;
+    *)                 flags=$fcommon ;;
+  esac
+
+  exec $cmd $flags "$@"
+#+END_EXAMPLE
+
+/Note: for simplicity we do not wrap/ =cabal='s new
+[[http://blog.ezyang.com/2016/05/announcing-cabal-new-build-nix-style-local-builds/][/nix-style
+local build commands/]] /like/ =new-build=, and =new-install=.
+
+Simply creating a symbolic link
+
+#+BEGIN_EXAMPLE
+  ln -s cabal-wrapper arm-linux-gnueabihf-cabal
+#+END_EXAMPLE
+
+provides us with =arm-linux-gnueabihf-cabal= which nicely fits in with
+the rest of the toolchain we built so far. And we can use
+=arm-linux-gnueabihf-cabal= just like =cabal= to build or install
+haskell packages to use with the cross compiler.
+
+*** Be Aware of build-type: Custom
+    :PROPERTIES:
+    :ID:       8BFC1A54-3716-4D3C-A726-CD2388D5221E
+    :END:
+
+Cabal provides an escape hatch for to support custom build types, for
+when the =build-type: Simple= is not sufficient. Unfortunately this
+requires the =Setup.hs= to be built by cabal and run, and cabal default
+to using the =ghc= is knows about to compile the =Setup.hs=. This then
+leads to a =Setup.hs= that is compiled with the cross compiling ghc
+(here: =arm-linux-gnueabihf-ghc=), and can only be run on the /host/,
+but not on the /build/ machine. Ideally cabal would be cross compilation
+aware and compile the =Setup.hs= with the compiler that targets the
+/build/ machine.
+
+As quite a few packages use =build-type: Custom= for the purpose of
+supporting =doctest= or =haddock=. Often times just rewriting
+=build-type: Custom= to =build-type: Simple= can make a package succeed
+to compile for cross compilation. /(An alternative solution, that tries
+to respect the/ =build-type: Custom=/, can be found in the/
+[[https://github.com/ghc-ios/ghc-ios-scripts/blob/master/i386-apple-darwin11-cabal-custom][/cabal-custom/]]
+/script, again from the/
+[[https://github.com/ghc-ios/ghc-ios-scripts][/ghc-ios-scripts/]]/)/
+
+*** Be Aware of Template Haskell
+    :PROPERTIES:
+    :ID:       CC68DBE6-2E2D-4673-ABFE-B11344F719FD
+    :END:
+
+Template Haskell provides interesting challenges for cross compilation.
+For a long time Template Haskell was simply not an option for cross
+compilation. While there are
+[[https://git-annex.branchable.com/design/assistant/blog/day_236__evil_splicer/][evil
+splicer]] and [[https://hackage.haskell.org/package/zeroth][ZeroTH]],
+which try to work around Template Haskell, there has been no proper
+Template Haskell support. However
+[[https://github.com/ghcjs/ghcjs][GHCJS]] does support Template Haskell
+and is a cross compiler as well, and the same approach can be taken with
+GHC. Cross compiling and Template Haskell will the the main topic for
+next week.
+
+** Why use a Cross Compiler?
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-18-why-use-a-cross-compiler
+   :EXPORT_DATE: <2017-05-18>
+   :ID:       CE63BDCE-8AA2-4D62-BD3C-376A52960158
+   :END:
+
+Since [[https://obsidian.systems][obsidian.systems]] and [[https://zw3rk.com][zw3rk]] posted the [[https://medium.com/@zw3rk/hello-world-a-cross-compilation-survey-890cb95029d7][Cross Compilation survey]]
+(and [[https://medium.com/@zw3rk/cross-compilation-survey-results-3988ad1b677b][results]]), I have been writing about cross compiling to [[http://amzn.to/2re1GLQ][Raspberry
+Pi]], and specifically [[https://medium.com/@zw3rk/making-a-raspbian-cross-compilation-sdk-830fe56d75ba][building a SDK for Raspbian Jessie]], and a [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94][Haskell
+cross compiler]], one topic has been coming up repeatedly: /Why use a
+Cross Compiler?/
+
+For those who work in the mobile application space, cross compilation is
+very likely an essential part of their day. iOS and Android apps are
+naturally cross compiled, even though this fact is mostly hidden away.
+In both cases the application is developed on a much more powerful
+machine than the one it is finally deployed to (or tested on).
+
+*** Power Differences
+    :PROPERTIES:
+    :ID:       D9CAB8F5-90CA-46EE-A9BE-0FD63B5D795D
+    :END:
+
+This leads us to the first reason for using a cross compiler. If the
+machine that /builds/ the software is much more powerful than the one
+that finally /hosts/ and runs the software, it make economical sense to
+use the more powerful machine to do the compilation.
+
+*** Resource Constraints
+    :PROPERTIES:
+    :ID:       4663CA75-B2DD-47C0-A875-98BA4F74DD42
+    :END:
+
+Another reason to use a cross compiler is the fact that the /target/
+that is finally /hosting/ the software might be ressource constraint in
+a way that prohibits or severely hinders the execution of the compiler.
+While the ressources are perfectly fine for running the compiled
+software, they might not be adequate to run the compiler.
+
+*** Environmental Restrictions
+    :PROPERTIES:
+    :ID:       739A31FB-A15C-482B-BE6D-539B4C94A373
+    :END:
+
+A third reason for using a cross compiler could stem from the
+restrictions put onto the environment that governs the /target/. If the
+/target/ simply does not admit to running the compiler or necessary
+toolchain to compile the software, the software must be compiled on a
+different /build/ machine.
+
+--------------
+
+Alternatives to cross compilation include building in an emulated
+environment that is sufficiently close to the /target/. The /build
+environment/ is then identical or sufficiently similar to the /host
+environment/. If the compiler in question does not support cross
+compilation this might be the only option.
+
+Finally with cross compilation the compiler now has to deal with two
+different machines. The /build/ machine on which the cross compiler can
+run, but the software built by the cross compiler can not run on. And
+the /host/ machine on which the built software can run, but the cross
+compiler can not. We will learn more about the challenges this presents
+for a Haskell cross compiler, and especially for Template Haskell next
+week.
+
+Should you use a cross compiler or not? I don't believe there is a
+general answer to this. It all comes down to the constraints as
+mentioned above; the feasibility and complexity of setting up (or
+obtaining) the SDK, the toolchain, and the compiler compared to setting
+up a virtual (or emulated) sufficiently similar environment to run a
+regular compiler in.
+
+** GHC's Cross Compilation Pipeline
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-19-ghc-s-cross-compilation-pipeline
+   :EXPORT_DATE: <2017-05-19>
+   :ID:       6DDBC666-C827-44E7-BB6F-56E999D9C01D
+   :END:
+
+Today is going to be a slight bit more technical, and less direct
+practical utility. We will look at the steps that GHC takes to cross
+compiles code via its LLVM backend.
+
+In [[https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/HscMain][GHC's Compiler Commentary]] we can see how the front end takes a
+Haskell file and after /Parsing/, /Renaming/, /Desugaring/, it ends up in
+GHC's [[https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/CoreSynType][Core]] language. The Core is then processed repeatedly by the
+/Simplification/ pass before being translated into [[https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/StgSynType][STG]] and finally [[https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/CmmType][Cmm]].
+Cmm is the language from which the three code generation backends in
+GHC take off.
+
+*** The Cross Compilation Backend
+    :PROPERTIES:
+    :ID:       5841E0E8-8F2D-451C-B191-13735B1CADB2
+    :END:
+
+The LLVM code generator takes in Cmm, and turns it into [[http://llvm.org/docs/LangRef.html][LLVM
+intermediate representation]].  The LLVM IR is then passed through the
+[[http://llvm.org/docs/CommandGuide/opt.html][/LLVM optimizer/]], the [[http://llvm.org/docs/CommandGuide/llc.html][/LLVM static compiler/]], [[https://github.com/ghc/ghc/blob/master/compiler/llvmGen/LlvmMangler.hs][/GHC's LLVM Mangler/]],
+before it is finally passed off to the /assembler/, and ends up as
+object code.
+
+*** LLVM IR
+    :PROPERTIES:
+    :ID:       3DB4F2A8-D53A-4F34-BD20-91724837AE80
+    :END:
+
+The LLVM intermediate representation can be written either in the
+textual human readable version or as [[http://llvm.org/docs/BitCodeFormat.html][LLVM Bitcode]]. LLVM Bitcode is a
+binary format, that is represented as a stream of bits. Values in the
+Bitcode format do not necessarily need to align with byte boundaries.
+
+/GHC's LLVM code generator currently produces textual ir. As the textual
+IR is not guaranteed to be stable across LLVM releases, this is one of
+the reasons that GHC is usually tied to a specific LLVM release./
+
+*** LLVM optimizer
+    :PROPERTIES:
+    :ID:       6C4210B5-E72E-4E07-B9A0-0686F800AD6B
+    :END:
+
+The LLVM optimizer =opt= reads in LLVM IR writes LLVM IR after
+performing a set of optimizations. The LLVM IR GHC uses GHC's custom
+calling convention =ghccc=, which requires the =-mem2reg= pass to be run
+by the optimizer, thus the backend always passes =-mem2reg= unless the
+=-O<n>= flag that is passed from GHC to the optimizer is greater than
+=0=. In which case the optimizer runs =-mem2reg= anyway.
+
+*** LLVM static compiler
+    :PROPERTIES:
+    :ID:       87ED98A9-02AA-4FAB-BAA1-61A33D453CD7
+    :END:
+
+The LLVM static compiler =llc= turns the LLVM IR produced by the LLVM
+optimizer into assembly for the given target.
+
+*** GHC's LLVM Mangler
+    :PROPERTIES:
+    :ID:       2BC6E1E1-92FC-4463-A0CB-D3FD955E9E06
+    :END:
+
+After the LLVM IR GHC produces is fed through LLVM's optimizer and
+static compiler, the resulting assembly might need some special
+attention. Therefore GHC passes the generated assembly through the
+LLVM Mangler. The mangler currently ensures that =-dead_strip= has no
+effect on Mach-O platforms (macOS, iOS, ...). Dead stripping on Mach-O
+platforms breaks GHC's Tables Next To Code optimization; it requires
+functions to carry prefix data. LLVM unconditionally
+inserts =.subsections_via_symbols= into the assembly. This leads the
+linker to believe that only code after /live/ function symbols needs to
+be retained and it then strips away the prefix data, if the previous
+symbol is considered /dead./ /This should not be needed with LLVM5
+anymore! (/[[https://reviews.llvm.org/D30770][/LLVM: D30770/]]/)/
+
+The mangler currently mangles two additional items: function to object
+mangling for ELF, and AVX instruction rewrites to fix AVX stack
+spills.  For AVX GHC essentially lies to LLVM about the stack size
+being 32byte aligned, but then needs to rewrite the aligned AVX
+instructions to their unaligned counterparts.
+
+*** The Assembler
+    :PROPERTIES:
+    :ID:       4E8CB1DF-31C4-4426-9438-7D00AFA8E0EA
+    :END:
+
+Finally the mangled assembly is turned into =.o= object code, which is
+then handed of to the linker. On macOS =clang= is currently used as the
+assembler instead of the system assembler.
+
+--------------
+
+That concludes our midlevel tour through the GHC's LLVM
+backend. /Please note that I did not discuss the optional/ =Splitter=/,
+and optional/ =MergeForeign= /phases./
+
+** Template Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-23-template-haskell
+   :EXPORT_DATE: <2017-05-23>
+   :ID:       3A4A2DDD-D392-4D29-A313-95558E2AD21E
+   :END:
+
+After using Haskell for a while, running into [[http://hackage.haskell.org/package/template-haskell][/Template Haskell/]]
+become more and more likely. A [[http://packdeps.haskellers.com/reverse/template-haskell][reverse dependency lookup for
+template-haskell]] lists over one thousand packages.
+
+While I believe many have /used/ Template Haskell via [[http://hackage.haskell.org/package/aeson][aeson]],
+[[http://hackage.haskell.org/package/language-c-inline][language-c-inline]], [[http://hackage.haskell.org/package/lens][lens]], [[http://hackage.haskell.org/package/wreq][wreq]], [[http://hackage.haskell.org/package/yesod][yesod]], or any of the other packages, my
+gut feeling is that fewer have actually /written/ Template Haskell code.
+
+/This post is not intended to advocate the use of Template Haskell,
+but rather to foster a better understanding for what it is, and how it
+can be used./
+
+Template Haskell [[https://wiki.haskell.org/Template_Haskell][is described]] as a facility that adds */compile-time/*
+/metaprogramming/ to Haskell. Metaprogramming is the ability of a
+language to treat code as data, and write code to produce other code
+to be used in the program.  Other languages have (limited)
+metaprogramming facilities as well: e.g., C has macros via the C
+preprocessor, that allow to expand code at compile time as well, C++
+has preprocessor macros and templates, and the languages of the Lisp
+family usually have macro systems and are known for their
+/homoiconicity/ and metaprogramming capabilities.
+
+*** The C preprocessor
+    :PROPERTIES:
+    :ID:       74A2C1AF-51D3-4A86-A98B-7F8035982ECF
+    :END:
+
+To use metaprogramming facilities we need a way to say /how/ we want to
+generate code, and a way to specify /where/ to generate code. The C
+preprocessor does this on a textual basis with a separate language. We
+can =define= a macro:
+
+#+BEGIN_EXAMPLE
+  #define ADD_ONE(x) ((x)+1)
+#+END_EXAMPLE
+
+this will simply replace all occurrences of =ADD_ONE(x)= with =(x)+1=
+prior to handing off the code to the compiler. For example:
+
+#+BEGIN_EXAMPLE
+  int x = ADD_ONE(1);
+#+END_EXAMPLE
+
+becomes
+
+#+BEGIN_EXAMPLE
+  int x = (1)+1;
+#+END_EXAMPLE
+
+*** Template Haskell Quotes
+    :PROPERTIES:
+    :ID:       FB7B194F-75C2-4046-86F2-36A0BF65D56C
+    :END:
+
+Contrary to the C preprocessor, Template Haskell operates on the
+abstract syntax tree (AST) level. Again we need a way to describe what
+we want the compiler to generate, and a directive to describe where to
+generate it. GHC expects a function that generates code to live in the
+Q monad. The Q monad governs its capabilities. Thus our =add_one=
+function needs to be of the form:
+
+#+BEGIN_EXAMPLE
+  add_one :: Int -> Q a
+#+END_EXAMPLE
+
+We are free to generate different kinds of Haskell syntax, e.g.,
+Types, Declarations, Patterns, Expression, ...; here we clearly want
+an Expression:
+
+#+BEGIN_EXAMPLE
+  add_one :: Int -> Q Exp
+#+END_EXAMPLE
+
+The first interesting question is, how to build this =Exp= Expression
+type. The [[http://hackage.haskell.org/package/template-haskell-2.11.1.0/docs/Language-Haskell-TH.html#t:Exp][template-haskell Haddocks for expressions]] are a good
+start. We end up with:
+
+#+BEGIN_EXAMPLE
+  add_one :: Int -> Q Exp
+  add_one x = pure $ InfixE (Just (LitE (IntegerL x)))
+                            (VarE '(+))
+                            (Just (LitE (IntegerL 1)))
+#+END_EXAMPLE
+
+We translate =x :: Int= into a /literal expression/ with an /integer
+literal/ of =x=, =+= into a /variable expression/, and then combine those
+using the =InfixE= constructor for /infix expression/.
+
+There *has to be* an /easier/ way, otherwise no one would bother writing
+Template Haskell in the first place. And of course there is. Template
+Haskell comes with /quotation/ support. The idea is to /quote/ some
+expression (or type, declaration, pattern, ...) and obtain the above
+expression as simple as:
+
+#+BEGIN_EXAMPLE
+  add_one :: Int -> Q Exp
+  add_one x = [| x + 1 |]
+#+END_EXAMPLE
+
+There are also quoter for declarations, type, patterns, ... or you can
+even [[http://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#template-haskell-quasi-quotation][define your own quoters using]] =-XQuasiQuotes=.
+
+/See also:/ [[https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#template-haskell][/The GHC User Guide on Template Haskell/]]
+
+*** Template Haskell Splices
+    :PROPERTIES:
+    :ID:       FB507F45-9292-46E9-A1C6-28BE26FD870B
+    :END:
+
+So far we learned how to create a function that can generate a
+Q-action.  Ultimately we want to convert the generated expressions to
+actual code in our program. GHC calls this splicing. We splice the
+result of calling the function (e.g. =add_one=) into our program. A
+/splice/ is written as =$x= or =$(...)=, where =x= is an identifier or =...=
+is an arbitrary expression. Thus if our =add_one= function lives in our
+=Lib= module, we can build the following =Consumer= module, which makes
+use of =add_one=, as follows:
+
+#+BEGIN_EXAMPLE
+  {-# LANGUAGE TemplateHaskell #-}
+  module Consumer where
+
+  import Lib (add_one)
+
+  two :: Int
+  two = $(add_one 1)
+#+END_EXAMPLE
+
+GHC will /at compile time/ evaluate the /splice/ =$(add_one 1)=, and put the
+result of evaluating =add_one 1= in the Q monad into its place.
+
+*** The Stage Restriction
+    :PROPERTIES:
+    :ID:       D93350B7-B9CF-463D-9C4C-7AA093C810DF
+    :END:
+
+You might be curious as to why we (had to) placed =add_one= into its own
+=Lib= module. This is often referred to as the /stage restriction/. The
+functions we want to call in our splices need to be defined outside of
+the module where they are used. This is necessary since they need to
+be compiled first. GHC compiles the module which contains the
+functions we want to use in our splice first to machine code, and when
+evaluating the splice, builds a tiny bit of interpreted bytecode that
+wraps the arguments and calls the function.
+
+*** The Q Monad
+    :PROPERTIES:
+    :ID:       0FCA01DF-7037-4A0E-835A-13BAFDBC2D5C
+    :END:
+
+I've mentioned the Q monad earlier and said it governs the
+metaprogramming capabilities of the functions we call in our splices.
+The =Quasi= [[http://hackage.haskell.org/package/template-haskell/docs/Language-Haskell-TH-Syntax.html#t:Quasi][type class]] describes the interface that we can make use of
+when constructing Template Haskell functions.
+
+Of special note should be the =qRunIO :: IO a -> m a=. Which is wrapped
+by =runIO :: IO a -> Q a=. This function allows to execute /arbitrary/ IO
+actions *at compile time!* This allows capabilities like reading
+(e.g. [[https://hackage.haskell.org/package/file-embed][file-embed]]) and writing arbitrary files or running
+commands/processes (e.g.  [[https://hackage.haskell.org/package/gitrev][gitrev]]). While this power can provide great
+utility, I believe we should be well aware of this fact when compiling
+arbitrary third party code.
+
+** Template Haskell and Cross Compilation
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-24-template-haskell-and-cross-compilation
+   :EXPORT_DATE: <2017-05-24>
+   :ID:       67891586-9BA9-4209-81F8-B9B9AB14E173
+   :END:
+
+[[https://medium.com/@zw3rk/quick-headless-raspberry-pi-setup-52ad6dd312c4][Over]] [[https://medium.com/@zw3rk/making-a-raspbian-cross-compilation-sdk-830fe56d75ba][the]] [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94][last]] [[https://medium.com/@zw3rk/the-haskell-cabal-and-cross-compilation-e9885fd5e2f][two]] [[https://medium.com/@zw3rk/why-use-a-cross-compiler-92322ef46e32][weeks]] we have seen how to build a Haskell cross
+compiler for the [[http://amzn.to/2qb8k10][Raspberry Pi]]. We have also seen a high level overview
+of [[https://medium.com/@zw3rk/template-haskell-75c7b67f9718][Template Haskell]]. Today we will look at what Template Haskell means
+in the context of cross compilation.
+
+As [[https://medium.com/@zw3rk/template-haskell-75c7b67f9718][pointed out yesterday]], Template Haskell requires that GHC is able
+to run the object code for the Template Haskell function. This in turn
+requires GHC to be able to load this code into memory and make it
+executable. Therein leis the first problem; our compiler is a cross
+compiler and produces code to run on the /host/, say Raspberry Pi, and
+not on the machine we /build/ it on. Thus we can not natively load and
+run the Template Haskell function on the same machine that GHC runs
+on, because our /host/ is different from our /build/ machine.
+
+*** Existing Solutions
+    :PROPERTIES:
+    :ID:       242BE89B-1236-45C3-8F67-EB2CA3FFFC63
+    :END:
+
+In [[https://medium.com/@zw3rk/the-haskell-cabal-and-cross-compilation-e9885fd5e2f][The Haskell Cabal and Cross Compilation]] post, I've mentioned [[https://git-annex.branchable.com/design/assistant/blog/day_236__evil_splicer/][evil
+splicer]] and [[https://hackage.haskell.org/package/zeroth][ZeroTH]].  Both use a strategy where the Template Haskell
+splices are extracted from the source, compiled on the /build/ machine,
+and the results are then spliced back into their places. This however
+implies that the splices are evaluated on the /build/ machine with
+libraries build for the /build/ machine. Subtle differences between
+/build/ and /host/ can potentially lead to incorrect results (e.g. 32 vs
+64bit).
+
+[[https://github.com/ghcjs/ghcjs][GHCJS]] is a Haskell to JavaScript compiler that uses the GHC API. As
+such it is also a cross compiler as its /target/ is a JavaScript
+runtime, while GHCJS itself does not run on the JavaScript
+runtime. GHCJS however supports Template Haskell via its [[https://github.com/ghcjs/ghcjs/wiki/Porting-GHCJS-Template-Haskell-to-GHC][out of
+process Template Haskell solution]] for some time now. GHCJS does this
+by running a [[https://nodejs.org][node.js]] server. GHCJS transfers the compiled Template
+Haskell code to the server process, links and evaluates it there and
+ship the result back to the GHCJS process.
+
+Since GHC 8.0.1, GHC has [[https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/ExternalInterpreter][The External Interpreter]], which provides
+support for a very similar mechanism. If GHC is provided with the
+=-fexternal-interpreter= flag, it will evaluate interpreted code in a
+separate process.
+
+If we tried a similar approach to GHCJS with our Raspberry Pi (and we
+will tomorrow), we would run into an issue that is transparent to
+GHCJS, but not in our case. GHCJS runs the node.js server /on the same
+machine/. This is important, because it means that the node.js process
+sees /the same file system/ that GHCJS sees. It also can shell out to
+any process GHCJS could shell out to, because the run on /the same
+machine./
+
+Therefore, if we transfer, link and run a Template Haskell function on
+our /host/ (here: Raspberry Pi), it will not see the same file system or
+be able to shell out to the same processes that GHC could. The
+Template Haskell function will see the /hosts/ and not the /build/
+machines environment. This is contrary to what many packages that use
+Template Haskell assume; they assume to operate in the same
+environment, can access the same file system, and call the same
+commands the GHC process can. For example the [[https://hackage.haskell.org/package/gitrev][gitrev]] package, which
+allows among others to embed the git repository hash into the program,
+natively assumes that it can operate in the same environment in which
+GHC is operating; the one that has =git= available and contains the
+module that is being compiled, and into which the git hash is supposed
+to be embedded.
+
+*** File and Process IO Example
+    :PROPERTIES:
+    :ID:       09678DC6-8AB8-4D13-933E-E6FF3467BDE9
+    :END:
+
+An example where both file IO, and process IO might be used would be
+an application that wants to reproduce the licenses of the libraries
+it uses, and provide a version with a git hash to identify the exact
+commit from which it was built. While we could use a separate file
+containing the licenses, we opt to actually include the licenses /in
+the binary/.  We'll assume that our =Main.hs= is in a git repository and
+our licenses are aggregated in a =LICENSES= file.
+
+#+BEGIN_EXAMPLE
+  {-# LANGUAGE TemplateHaskell, LambdaCase #-}
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  module Main where
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  import Development.GitRev (gitHash)
+  import Data.FileEmbed     (embedStringFile)
+  import System.Environment (getProgName, getArgs)
+  import System.Exit        (die)
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  main :: IO ()
+  main = getArgs >>= \case
+    ["--licenses"] -> putStrLn $(embedStringFile "LICENSES")
+    ["--version"]  -> putStrLn ("Version " ++ $gitHash)
+    _otherwise     -> do
+      prog <- getProgName
+      die $ "usage: " ++ prog ++ " [--licenses] [--version]"
+#+END_EXAMPLE
+
+While this is clearly some rather [[https://github.com/zw3rk/medium/tree/master/template-haskell-and-cross-compilation][contrived code]], this rather simple,
+innocent looking snipped can not trivially be cross compiled. When GHC
+encounters the =$(embedStringFile "LICENSES")= splice, it will build a
+bytecode object (BCO), that calls =embedStringFile= with
+="LICENSES"=. Thus loading the =file-embed= library, and evaluating the
+BCO. The BCO requests a handle on the =embedStringFile= function, and
+invokes it with ="LICENSES"=.  While this could execute perfectly fine
+on the /host/, the function =runIO= is opaque to GHC, and GHC can't tell
+if the =IO= action will /read/write files/ or /call a program/. GHC would
+simply try to read the =LICENSES= file on the /host./ This was not our
+intention! The same holds for the =$gitHash= splice, from which we
+expect to run =git= on the /build/ machine and obtain the git hash of the
+/source directory/.
+
+*** Summary
+    :PROPERTIES:
+    :ID:       1780686B-3E7B-4E02-A6C8-80E7E7D72B0C
+    :END:
+
+We have now seen that Template Haskell poses some interesting problems
+for cross compilation that require GHC to be able to load, link, and
+evaluate object code on the /host/. Due to the environmental differences
+(file system, available programs, ...) the inability to execute
+Template Haskell functions on the /build/ machine makes file and process
+IO nonsensical.
+
+** Cross Compiling Template Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-25-cross-compiling-template-haskell
+   :EXPORT_DATE: <2017-05-25>
+   :ID:       9EAD4411-5732-4F6E-B501-1030A29F8A7B
+   :END:
+
+As laid out yesterday, there are some interesting questions pertaining
+to [[https://medium.com/@zw3rk/template-haskell-and-cross-compilation-16b92f40c6ab][Template Haskell and Cross Compilation]]. Today we will put all the
+pieces together and cross compile template haskell to our [[http://amzn.to/2qb8k10][Raspberry Pi]]
+/with file and process IO/!
+
+*** The External Interpreter
+    :PROPERTIES:
+    :ID:       992CAE94-435D-4509-A311-D38958A3427F
+    :END:
+
+[[https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/ExternalInterpreter][GHCs External Interpreter]] splits GHC into two components the haskell
+compiler =ghc= and the interpreter server =iserv=. Passing
+=-fexternal-interpreter= to =ghc= will spawn an =iserv= instance and run all
+interpreted code through it. =ghc= can instruct =iserv= to load and link
+libraries as needed, and evaluate bytecode objects. =iserv= in turn can
+query =ghc= for the current compilation environment during the
+evaluation.
+
+*** Splitting iserv
+    :PROPERTIES:
+    :ID:       562F42AA-3BCF-4C58-8D7E-4A5EA1FCBF77
+    :END:
+
+For the cross compilation scenario, we need a to split =iserv= into two
+parts, an =iserv-proxy= which serves as the =iserv= interface to GHC on
+the /build/ machine. And an =GHCSlave= on the /host/ machine. This means we
+need to move from
+
+#+BEGIN_EXAMPLE
+  .---------------.
+  | GHC <-> iserv |
+  '---------------'
+    build machine
+#+END_EXAMPLE
+
+to a setup that looks more like
+
+#+BEGIN_EXAMPLE
+      build machine            host machine
+  .-----------------------.   .------------.
+  | GHC <-> iserv-proxy <-+---+-> GHCSlave |
+  '-----------------------' ^ '------------'
+         ^                  |
+         |                  '-- communication via sockets
+         '-- communication via pipes
+#+END_EXAMPLE
+
+/Note: I will not go into the technical details of the/ =iserv-proxy= /and/
+=iserv= /library to be used in the/ =GHCSlave= /in this post./
+
+*** Building GHC
+    :PROPERTIES:
+    :ID:       9B961EEF-DD49-4CF7-BE3C-9CB0E610E408
+    :END:
+
+In [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94][A Haskell Cross Compiler for Raspberry Pi]] we have seen how to build
+a cross compiling GHC. As this is still work in progress and not all
+diffs have been merged, or are updated and rebased onto GHCs master
+branch on a regular basis, you will need a very recent copy (as recent
+as today!).
+
+#+BEGIN_EXAMPLE
+  git clone --recursive git://git.haskell.org/ghc.git
+  cd ghc
+  git remote add zw3rk https://github.com/zw3rk/ghc.git
+  git fetch zw3rk
+  git checkout -b zw3rk/my-ghc
+  git reset --hard zw3rk/my-ghc
+  git submodule update --init --recursive
+#+END_EXAMPLE
+
+Following the build instructions in [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94][A Haskell Cross Compiler for
+Raspberry Pi]] should yield an up to date =arm-linux-gnueabihf-ghc=.
+
+/Note: The hard reset is needed, as/ =zw3rk/my-ghc= /is periodically
+force pushed. Please let me know of a better solution!/
+
+*** Building iserv
+    :PROPERTIES:
+    :ID:       207C5C3A-5D5B-4EED-BF4F-FA6A8B3278FA
+    :END:
+
+To build =iserv-proxy= we will use =ghc= (the GHC that builds on and for
+the build machine), as the proxy needs to be able to run on the /build/
+machine. The =iserv-bin= package, which contains the =iserv-proxy= is part
+of the ghc tree, and can be found in the =iserv= subfolder. We can
+simply build and install it by saying
+
+#+BEGIN_EXAMPLE
+  ghc/iserv $ cabal install -flibrary -fproxy
+#+END_EXAMPLE
+
+This should build and install =$HOME/.cabal/bin/iserv-proxy=.
+
+*** Building GHCSlave
+    :PROPERTIES:
+    :ID:       223E8384-59FF-453E-9E8E-752189F31F6F
+    :END:
+
+Next we need the GHCSlave to run on the Raspberry Pi. For this we need
+the =iserv= library, to link into GHCSlave. To do this we need the
+=arm-linux-gnueabihf-cabal= we created in [[https://medium.com/@zw3rk/the-haskell-cabal-and-cross-compilation-e9885fd5e2f][The Haskell Cabal and Cross
+Compilation]].
+
+#+BEGIN_EXAMPLE
+  ghc/iserv $ arm-linux-genueabihf-cabal install -flibrary
+#+END_EXAMPLE
+
+Next, we will build =RPi/Slave.hs= from the =ghc-slave= repository:
+
+#+BEGIN_EXAMPLE
+  git clone https://github.com/zw3rk/ghc-slave.git
+  cd ghc-slave/RPi
+  arm-linux-gnueabihf-ghc Slave.hs
+#+END_EXAMPLE
+
+This should provide the =Slave= executable for the Raspberry Pi. Because
+the =Slave= binary links against the =libffi= shared object we built when
+building the =arm-linux-gnueabihf-ghc=, we need that on the Raspberry Pi
+as well:
+
+#+BEGIN_EXAMPLE
+  scp path/to/libffi/arm-linux-gnueabihf/lib/libffi.so.7 \
+      pi@raspberrypi:
+  scp Slave pi@raspberrypi:
+#+END_EXAMPLE
+
+On the Raspberry Pi, we will need a temporary folder =$HOME/slave=,
+where GHCSlave store libraries and objects needed for the evaluation
+of splices.
+
+#+BEGIN_EXAMPLE
+  pi@raspberrypi:~ $ mkdir $HOME/slave
+#+END_EXAMPLE
+
+With all this properly set up we can start the GHCSlave on the
+Raspberry Pi
+
+#+BEGIN_EXAMPLE
+  pi@raspberrypi:~ $ LD_LIBRARY_PATH=$HOME ./Slave $HOME/slave 5000
+#+END_EXAMPLE
+
+*** Compiling Template Haskell via GHCSlave
+    :PROPERTIES:
+    :ID:       2E5D25FE-7053-4ACF-9E26-E2C48DE55C69
+    :END:
+
+On to the exciting part! As we now have =iserv-proxy= on the build
+machine, and =GHCSlave= on the host, we finally have a /fully functioning
+cross compiler with Template Haskell support!/
+
+Let us use [[https://github.com/quchen][David Luposchainsky]]
+[[https://github.com/quchen/articles/blob/master/useful_techniques.md#poor-mans-supercompiler][poor
+man's supercompiler]] as an example.
+
+#+BEGIN_EXAMPLE
+  -- File: TH.hs
+  {-# LANGUAGE TemplateHaskell #-}
+  {-# LANGUAGE BangPatterns #-}
+  module TH where
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  import Language.Haskell.TH.Syntax
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  -- Calculate the n-th Fibonacci number's last 10 digits in O(n).
+  fibo :: Integer -> Integer
+  fibo = (`rem` 10^10) . fibo' (0, 1)
+        where fibo' (a,_) 0 = a
+              fibo' (!a,!b) n = fibo' (b, a + b) (n - 1)
+
+  -- Wraps an Integer in(to) a Q Exp
+  wrapTH :: Integer -> Q Exp
+  wrapTH n = [| n |]
+
+  -- | Wrap a certain Fibonacci number in an expression
+  fiboTH :: Integer -> Q Exp
+  fiboTH n = wrapTH (fibo n)
+#+END_EXAMPLE
+
+and the =Main= module:
+
+#+BEGIN_EXAMPLE
+  -- File: Main.hs
+
+  {-# LANGUAGE TemplateHaskell #-}
+
+  import TH
+
+  myFibo :: Integer
+  myFibo = $( fiboTH (10^5) )
+
+  main = print myFibo
+#+END_EXAMPLE
+
+Compiling this should be as simple as
+
+#+BEGIN_EXAMPLE
+  arm-linux-gnueabihf-ghc -fexternal-interpreter \
+      -pgmi $HOME/.cabal/bin/iserv-proxy \
+      -opti10.0.1.1 -opti5000 \
+      TH.hs Main.hs
+#+END_EXAMPLE
+
+assuming your Raspberry Pis IP is =10.0.1.1=.
+
+*** Compiling a Cabal Package that required Template Haskell
+    :PROPERTIES:
+    :ID:       11DD9D70-1DD1-4AFB-A851-98ED609484D3
+    :END:
+
+As [[https://medium.com/@zw3rk/template-haskell-and-cross-compilation-16b92f40c6ab][we have seen yesterday]], the [[https://hackage.haskell.org/package/file-embed][file-embed]] package as well as the
+[[https://hackage.haskell.org/package/gitrev][gitrev]] package use Template Haskell (and the file system and =git=
+process).  The [[https://phabricator.haskell.org/D3502][initial patch]] to enable file system access and process
+IO tried to do this transparently by hooking into GHCs Runtime
+System. This proved to be rather inelegant. A [[https://phabricator.haskell.org/D3608][revised patch]] extends
+the Quasi class. The drawback is that packages need to be adapted to
+the new Quasi class and be more explicit about the file system and
+process IO to work with cross compilation.
+
+With some [[https://github.com/zw3rk/file-embed/commit/679b3690e1edf53986ea3af83e99115fdc32b75c][minor]] [[https://github.com/zw3rk/gitrev/commit/958f5bf8fd5d16c22f282a96d54ad1f8ddae5240][alterations]] to the file-embed and gitrev package, we
+can make them work with the new features, let's install them.
+
+#+BEGIN_EXAMPLE
+  git clone https://github.com/zw3rk/file-embed.git
+  (cd file-embed && arm-linux-gnueabihf-cabal install)
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  git clone https://github.com/zw3rk/gitrev.git
+  (cd gitrev && arm-linux-gnueabihf-cabal install)
+#+END_EXAMPLE
+
+So far so good. Now, let us try the [[https://github.com/zw3rk/medium/tree/master/template-haskell-and-cross-compilation][contrived example]] from [[https://medium.com/@zw3rk/template-haskell-and-cross-compilation-16b92f40c6ab][yesterday]]
+
+#+BEGIN_EXAMPLE
+  git clone https://github.com/zw3rk/medium.git
+  cd medium/template-haskell-and-cross-compilation
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  # configure the th-example package without shared
+  arm-linux-gnueabihf-cabal configure --disable-shared
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  # build it with cabal
+  arm-linux-gnueabihf-cabal build \
+     --ghc-options="-fexternal-interpreter \
+                    -pgmi $HOME/.cabal/bin/iserv-proxy \
+                    -opti10.0.1.1 -opti5000"
+#+END_EXAMPLE
+
+/Note: you will need to have the the/ =Slave= /process running on your
+Raspberry Pi at IP/ =10.0.1.1=/./
+
+This will produce
+=dist/arm-linux-gnueabihf/build/th-example/th-example=. Copying it over
+to the Raspberry Pi and executing it should /just work/:
+
+#+BEGIN_EXAMPLE
+  scp dist/arm-linux-gnueabihf/build/th-example/th-example \
+      pi@raspberrypi:
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  ssh pi@raspberrypi 'LD_LIBRARY_PATH=. ./th-example --version'
+#+END_EXAMPLE
+
+And yield =Version 32b8bbb75cf8910443397bfab6b194c8e6d36d47=.
+
+*** Current Limitations
+    :PROPERTIES:
+    :ID:       8833786C-DF56-4651-9263-C6C896321BF8
+    :END:
+
+As we saw, packages that use file or process IO, need to be adapted to
+use the new more explicit API to work. It should also be noted that
+all this is quite new code, and not all differentials have landed in
+master yet. I am quite certain there will be bugs, however I'd like to
+encourage you to try this out and provide feedback, PRs and
+bugreports!
+
+** Cross Compiling Yesod to Raspberry Pi
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-27-cross-compiling-yesod-to-raspberry-pi
+   :EXPORT_DATE: <2017-05-27>
+   :ID:       693B0554-9438-4CCF-B4FC-F99C647A6794
+   :END:
+
+[[https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914][As we have seen]] we can now cross compile Template Haskell. The [[http://www.yesodweb.com/][Yesod
+Web Framework]] is [[http://snapframework.com/][one]] [[https://www.spock.li/][o]]f [[http://haskell-servant.readthedocs.io/en/stable/][many]] haskell web frameworks. By default it
+makes use of [[http://hackage.haskell.org/package/shakespeare][shakespeare]] templates, which happen to use Template
+Haskell.
+
+This is supposed to be a case study of cross compiling haskell
+packages to the [[http://amzn.to/2qb8k10][Raspberry Pi]]. We will study the issues that can arise
+with this rather recent development and how to mitigate them. It will
+involve updating packages to make use of the new Template Haskell
+facilities and lifting build constraints.
+
+*** The Sample Yesod Application
+    :PROPERTIES:
+    :ID:       D452FC7A-82C0-47E6-A7DD-5F2BDE63169C
+    :END:
+
+The application we are trying to compile is a rather simple one from
+the [[http://www.yesodweb.com/book][Yesod book]]. You can follow along with the source from the
+=cross-compiling-yesod= subfolder in the [[https://github.com/zw3rk/medium][zw3rk/medium]] repository.
+
+#+BEGIN_EXAMPLE
+  git clone https://github.com/zw3rk/medium.git
+  cd medium/cross-compiling-yesod
+#+END_EXAMPLE
+
+The =src/Main.hs= looks as follows
+
+#+BEGIN_EXAMPLE
+  {-# LANGUAGE OverloadedStrings     #-}
+  {-# LANGUAGE QuasiQuotes           #-}
+  {-# LANGUAGE TemplateHaskell       #-}
+  {-# LANGUAGE TypeFamilies          #-}
+  import           Yesod
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  data HelloWorld = HelloWorld
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  mkYesod "HelloWorld" [parseRoutes|
+  / HomeR GET
+  /page1 Page1R GET
+  /page2 Page2R GET
+  |]
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  instance Yesod HelloWorld
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  getHomeR :: Handler Html
+  getHomeR  = defaultLayout
+              [whamlet|Hello World! <a href=@{Page1R}>Go to page 1!|]
+  getPage1R = defaultLayout
+              [whamlet|Page 1 <a href=@{Page2R}>Go to page 2!|]
+  getPage2R = defaultLayout
+              [whamlet|Page 2 <a href=@{HomeR}>Go home!|]
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  main :: IO ()
+  main = warp 3000 HelloWorld
+#+END_EXAMPLE
+
+This small example uses Template Haskell with two custom [[https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#template-haskell-quasi-quotation][QuasiQuotes]]
+=parseRoutes= and =whamlet=.
+
+*** Cross Compiling to Raspberry Pi
+    :PROPERTIES:
+    :ID:       8554E8DB-E8C7-49F1-A347-248D6D3F72D2
+    :END:
+
+We will use the [[https://medium.com/@zw3rk/the-haskell-cabal-and-cross-compilation-e9885fd5e2f][The Haskell Cross Compilation]] toolchain with Raspbery
+Pi Slave process as set up in [[https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914][Cross Compiling Template Haskell]] post.
+
+Let's start simple and see how far we get by installing the
+dependencies:
+
+#+BEGIN_EXAMPLE
+  arm-linux-gnueabihf-cabal install --dependencies-only --allow-newer
+#+END_EXAMPLE
+
+/We need the/ =--allow-newer= /as we are building with a development
+compiler./
+
+*** Build-Type: Custom
+    :PROPERTIES:
+    :ID:       E0C12385-EAAC-413F-994B-37F09E4564BA
+    :END:
+
+After a little while this will fail with
+
+#+BEGIN_EXAMPLE
+  Failed to install entropy-0.3.7
+  Build log ( ~/.cabal/logs/entropy-0.3.7.log ):
+  cabal: Entering directory 'entropy-0.3.7'
+  [1 of 1] Compiling Main             ( entropy-0.3.7/dist/arm-linux-gnueabihf/setup/setup.hs, entropy-0.3.7/dist/arm-linux-gnueabihf/setup/Main.o )
+  Linking entropy-0.3.7/dist/arm-linux-gnueabihf/setup/setup ...
+  entropy-0.3.7/dist/arm-linux-gnueabihf/setup/setup: entropy-0.3.7/dist/arm-linux-gnueabihf/setup/setup: cannot execute binary file
+  cabal: Leaving directory 'entropy-0.3.7'
+#+END_EXAMPLE
+
+for =entropy-0.3.7= and =stm-chans-3.0.0.4=. This is the result of
+=built-type: custom= as discussed in the [[https://medium.com/@zw3rk/the-haskell-cabal-and-cross-compilation-e9885fd5e2f][The Haskell Cabal and Cross
+Compilation]] post.
+
+A quick inspection of [[https://github.com/TomMD/entropy/blob/master/Setup.hs][entropy/Setup.hs]] reveals that the setup is
+required for haddock and detecting =HAVE_RDRAND=. It is probably ok to
+try and compile this without the custom setup.  [[http://community.haskell.org/~wren/stm-chans/Setup.hs][stm-chans/Setup.hs]]
+does some haddock setup as well, which we do not need right now.
+
+#+BEGIN_EXAMPLE
+  cabal get entropy
+  cd entropy-*
+  sed -i.bak -E 's/([Bb]uild-[Tt]ype:[ ]+)Custom/\1Simple/g' *.cabal
+  arm-linux-gnueabihf-cabal install --allow-newer
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  cabal get stm-chans
+  cd stm-chans-*
+  sed -i.bak -E 's/([Bb]uild-[Tt]ype:[ ]+)Custom/\1Simple/g' *.cabal
+  arm-linux-gnueabihf-cabal install --allow-newer
+#+END_EXAMPLE
+
+*** hsc2hs: unsupported directive in cross compilation
+    :PROPERTIES:
+    :ID:       D42A937A-2793-4DF7-8CC6-9F98F1024150
+    :END:
+
+We will also see the [[http://hackage.haskell.org/package/zlib][zlib]] package to fail with:
+
+#+BEGIN_EXAMPLE
+  Configuring zlib-0.6.1.2...
+  Building zlib-0.6.1.2...
+  Preprocessing library zlib-0.6.1.2...
+  Codec/Compression/Zlib/Stream.hsc:1023
+     directive const_str cannot be handled in cross-compilation mode
+  cabal: Leaving directory 'zlib-0.6.1.2'
+#+END_EXAMPLE
+
+The GHC user guide section for the =hsc2hs= utility lists =const_str= as
+[[http://downloads.haskell.org/~ghc/master/users-guide/utils.html#cross-compilation][not supported in cross-compilation mode]] as well.
+
+[[https://github.com/rwbarton][Reid Barton]] kindly pointed out [[https://ghc.haskell.org/trac/ghc/ticket/9689][#9689]], which provides a proper patch to
+=zlib=, which is much better than this [[https://phabricator.haskell.org/D3613][hack]] to enable =const_str= in
+=hsc2hs=.
+
+Sadly though it looks like the patch has never made it into =zlib=; I've
+opened [[https://github.com/haskell/zlib/pull/14][pull/#14]] on behalf of the original authors.
+
+#+BEGIN_EXAMPLE
+  git clone https://github.com/mobilehaskell/zlib
+  (cd zlib && arm-linux-gnueabihf-cabal install --allow-newer)
+#+END_EXAMPLE
+
+Should make the =zlib= package available.
+
+*** Requires External Interpreter
+    :PROPERTIES:
+    :ID:       3A482684-D3B1-4B5F-A845-0894AED54A3C
+    :END:
+
+A few other packages (th-lift-instances, math-functions, will have
+failed with
+
+#+BEGIN_EXAMPLE
+  Failed to install th-lift-instances-0.1.11
+  Build log ( ~/.cabal/logs/th-lift-instances-0.1.11.log ):
+  cabal: Entering directory 'th-lift-instances-0.1.11'
+  Configuring th-lift-instances-0.1.11...
+  Building th-lift-instances-0.1.11...
+  Preprocessing library th-lift-instances-0.1.11...
+  [1 of 1] Compiling Instances.TH.Lift ( src/Instances/TH/Lift.hs, dist/arm-linux-gnueabihf/build/Instances/TH/Lift.o )
+  ghc: this operation requires -fexternal-interpreter
+  cabal: Leaving directory 'th-lift-instances-0.1.11'
+#+END_EXAMPLE
+
+This indicates some Template Haskell compilation is needed. With
+GHCSlave started on the Raspberry Pi at =10.0.1.1=, we retry this with
+
+#+BEGIN_EXAMPLE
+  arm-linux-gnueabihf-cabal install --allow-newer \
+     --ghc-options="-fexternal-interpreter \
+                    -pgmi $HOME/.cabal/bin/iserv-proxy \
+                    -opti10.0.1.1 -opti5000"
+#+END_EXAMPLE
+
+*** Requires File or Process IO
+    :PROPERTIES:
+    :ID:       10EB70E6-C211-473E-950F-081C1C2342AA
+    :END:
+
+Next the =shakespeare= package will fail with
+
+#+BEGIN_EXAMPLE
+  Preprocessing library shakespeare-2.0.13...
+  [ 1 of 18] Compiling Text.IndentToBrace ( Text/IndentToBrace.hs, dist/arm-linux-gnueabihf/build/Text/IndentToBrace.o )
+  [ 2 of 18] Compiling Text.MkSizeType  ( Text/MkSizeType.hs, dist/arm-linux-gnueabihf/build/Text/MkSizeType.o )
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  Text/MkSizeType.hs:7:1: warning: [-Wunused-imports]
+      The import of ‘Language.Haskell.TH’ is redundant
+        except perhaps to import instances from ‘Language.Haskell.TH’
+      To import instances alone, use: import Language.Haskell.TH()
+    |
+  7 | import Language.Haskell.TH (conT)
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  [ 3 of 18] Compiling Text.Shakespeare.Base ( Text/Shakespeare/Base.hs, dist/arm-linux-gnueabihf/build/Text/Shakespeare/Base.o )
+  [ 4 of 18] Compiling Text.Shakespeare ( Text/Shakespeare.hs, dist/arm-linux-gnueabihf/build/Text/Shakespeare.o )
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  Text/Shakespeare.hs:237:24: error:
+      Ambiguous occurrence ‘readProcessWithExitCode’
+      It could refer to either
+         ‘Language.Haskell.TH.Syntax.readProcessWithExitCode’,
+      imported from
+         ‘Language.Haskell.TH.Syntax’ at Text/Shakespeare.hs:43:1-33
+      or ‘System.Process.readProcessWithExitCode’,
+      imported from ‘System.Process’ at Text/Shakespeare.hs:63:24-46
+      |
+  237 |   (ex, output, err) <- readProcessWithExitCode cmd args input
+      |                        ^^^^^^^^^^^^^^^^^^^^^^^
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  Text/Shakespeare.hs:468:23: error:
+      Ambiguous occurrence ‘getModificationTime’
+      It could refer to either
+         ‘Language.Haskell.TH.Syntax.getModificationTime’,
+      imported from
+         ‘Language.Haskell.TH.Syntax’ at Text/Shakespeare.hs:43:1-33
+      or ‘System.Directory.getModificationTime’,
+      imported from ‘System.Directory’ at Text/Shakespeare.hs:54:26-44
+      |
+  468 |     mtime <- qRunIO $ getModificationTime fp
+      |                       ^^^^^^^^^^^^^^^^^^^
+#+END_EXAMPLE
+
+This is due to the deliberate naming of process and file IO functions
+identical to their =System.Process= and =System.Directory= counterparts.
+This way packages that use process or file IO, which likely import
+=Language.Haskell.TH.Syntax= as well, will fail and can be inspected for
+adjustments.
+
+After a [[https://github.com/mobilehaskell/shakespeare/commit/24c702f1e6caaf629785c926ed0376d33b003f71][minor adjustment]] to the shakespeare package, similar to the
+adjustments made to [[https://github.com/mobilehaskell/file-embed/commit/679b3690e1edf53986ea3af83e99115fdc32b75c][file-embed]] and [[https://github.com/mobilehaskell/gitrev/commit/958f5bf8fd5d16c22f282a96d54ad1f8ddae5240][gitrev]] [[https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914][the other day]]. We can
+install shakespeare as well:
+
+#+BEGIN_EXAMPLE
+  git clone https://github.com/mobilehaskell/shakespeare.git
+  cd shakespeare
+  arm-linux-gnueabihf-cabal install --allow-newer \
+     --ghc-options="-fexternal-interpreter \
+                    -pgmi $HOME/.cabal/bin/iserv-proxy \
+                    -opti10.0.1.1 -opti5000"
+#+END_EXAMPLE
+
+*** The Final Stretch
+    :PROPERTIES:
+    :ID:       C52B3395-C3C8-4493-BE25-75710EC81CF0
+    :END:
+
+Returning to compile the dependencies for our Yesod app:
+
+#+BEGIN_EXAMPLE
+  arm-linux-gnueabihf-cabal install --dependencies-only --allow-newer
+#+END_EXAMPLE
+
+The =http-api-data= package will fail with a =build-type: custom=
+failure. And the =yesod= package will fail with /ambiguous occurrences/,
+which require [[https://github.com/mobilehaskell/yesod/commit/76cc8918e9b3f5b064b2a679b5ebba17a1e21f80][yet another small adjustment]], and install just fine
+after that.
+
+#+BEGIN_EXAMPLE
+  git clone https://github.com/mobilehaskell/yesod.git
+  cd yesod/yesod
+  arm-linux-gnueabihf-cabal install --allow-newer \
+     --ghc-options="-fexternal-interpreter \
+                    -pgmi $HOME/.cabal/bin/iserv-proxy \
+                    -opti10.0.1.1 -opti5000"
+#+END_EXAMPLE
+
+*** Building and Running the Yesod Application on Raspberry Pi
+    :PROPERTIES:
+    :ID:       E98A5ED3-068F-48E4-A13A-F35D5F350B22
+    :END:
+
+Finally we are in the position to build out Yesod app now, while this
+was clearly a bit involved, over time (and with patches being
+upstreamed) this will become much easier.
+
+Building the app now is as simple as
+
+#+BEGIN_EXAMPLE
+  arm-linux-gnueabihf-cabal configure
+  arm-linux-gnueabihf-cabal build \
+     --ghc-options="-fexternal-interpreter \
+                    -pgmi $HOME/.cabal/bin/iserv-proxy \
+                    -opti10.0.1.1 -opti5000"
+#+END_EXAMPLE
+
+Transferring the =app= binary to the Raspberry Pi and running it:
+
+#+BEGIN_EXAMPLE
+  scp dist/arm-linux-gnueabihf/build/app/app pi@raspberrypi:
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  ssh pi@raspberrypi 'LD_LIBRARY_PATH=. ./app'
+#+END_EXAMPLE
+
+Opening [[http://raspberrypi:3000]] shows the running Yesod instance
+
+#+CAPTION: The Haskell Yesod Web Framework running on Raspberry Pi
+[[https://cdn-images-1.medium.com/max/800/1*PiXJYEkfvP4nu5lxLRXyYg.png]]
+
+*** Conclusion
+    :PROPERTIES:
+    :ID:       54363728-14C7-4B8E-905F-0AF5A9CE5E2E
+    :END:
+
+We have seen that cross compiling Haskell to Raspberry Pi with
+Template Haskell support is possible. It currently still does require
+a few manual interventions. Those will become unnecessary over time,
+when patches are integrated into the libraries. There has also been
+[[https://github.com/haskell/cabal/issues/2327][some progress]] on lessening the need for /build-type: custom/ when it is
+just needed for [[https://github.com/sol/doctest][doctest]]. If packages can be freed from needing custom
+build types for haddock and doctest, they would be easier to cross
+compile.
+
+Finally you might have noticed that I moved all the /patched/ packages
+to [[https://github.com/mobilehaskell][github.com/mobilehaskell]]. I'd like to invite you to join that
+organisation and publish /patched/ forks there, so that we all can
+benefit, and be able to find the /patched/ packages in a central
+location.
+
+** A Haskell Cross Compiler for Android
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-30-a-haskell-cross-compiler-for-android
+   :EXPORT_DATE: <2017-05-30>
+   :ID:       6E637923-F590-47CF-AAB8-FFA42B0B27CF
+   :END:
+
+Over the last two weeks we saw how to build [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94][a Haskell Cross Compiler
+for Raspberry Pi]], set up [[https://medium.com/@zw3rk/the-haskell-cabal-and-cross-compilation-e9885fd5e2f][Cabal for Cross Compilation]], and how to [[https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914][Cross
+Compile Template Haskell]]. Building a Haskell cross compiler for
+Android is almost identical, with only minor differences.
+
+For the Raspbian Haskell cross compiler we had a single architecture
+only. Android runs on a plethora of architectures. We will focus on
+arm processors, specifically the 32bit =armv7= and 64bit =aarch64=.
+
+*** The Android NDK & LLVM
+    :PROPERTIES:
+    :ID:       6DE5490A-E22A-4C3B-9AB8-4E54B122EC1F
+    :END:
+
+Google [[https://developer.android.com/ndk/downloads/index.html][provides the NDK for Android]], which provides a similar set of
+tools as the [[https://medium.com/@zw3rk/making-a-raspbian-cross-compilation-sdk-830fe56d75ba][Raspbian Cross Compilation SDK]] does; it contains the
+Android toolchain and sysroot.
+
+For GHC we need =opt= and =llc= from the llvm 4, which can be obtained
+from their [[http://releases.llvm.org/download.html][release download website]].
+
+*** Toolchain Wrapping
+    :PROPERTIES:
+    :ID:       1A772B50-1254-4D5D-B8C7-C2DAC8ECB23F
+    :END:
+
+To keep our =PATH= tidy, and abstract about the Android NDK a bit, we'll
+use a wrapper script that wraps the toolchain and embeds the sysroot.
+
+#+BEGIN_EXAMPLE
+  #!/bin/bash
+  source android-toolchain.config
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  name=${0##*/}
+  cmd=${name##*-}
+  target=${name%-*}
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  case $name in
+   *-cabal)
+    fcommon="--builddir=dist/${target}"
+    fcompile=" --with-ghc=${target}-ghc"
+    fcompile+=" --with-ghc-pkg=${target}-ghc-pkg"
+    fcompile+=" --with-gcc=${target}-clang"
+    fcompile+=" --with-ld=${target}-ld"
+    fcompile+=" --hsc2hs-options=--cross-compile"
+    fconfig="--disable-shared --configure-option=--host=${target}"
+    case $1 in
+     configure|install) flags="${fcommon} ${fcompile} ${fconfig}" ;;
+     build)             flags="${fcommon} ${fcompile}" ;;
+     list|info|update)  flags="" ;;
+     "")                flags="" ;;
+     *)                 flags=$fcommon ;;
+    esac
+    ;;
+   # android (armv7)
+   armv7-linux-androideabi-clang)
+    flags=" --target=${target}"
+    flags+=" --sysroot=${ADR32_SYSROOT}"
+    flags+=" -isysroot ${ADR32_SYSROOT}"
+    ;;
+   armv7-linux-androideabi-ld|armv7-linux-androideabi-ld.gold)
+    flags=" --sysroot=${ADR32_SYSROOT}"
+    flags+=" -L${ADR32_TOOLCHAIN_LIB}"
+    ;;
+   # android (aarch64)
+   aarch64-linux-android-clang)
+    flags=" --target=${target}"
+    flags+=" --sysroot=${ADR64_SYSROOT}"
+    flags+=" -isysroot ${ADR64_SYSROOT}"
+    ;;
+   aarch64-linux-android-ld|aarch64-linux-android-ld.gold)
+    flags=" --sysroot=${ADR64_SYSROOT}"
+    flags+=" -L${ADR64_TOOLCHAIN_LIB}"
+    ;;
+   # default
+   *-nm|*-ar|*-ranlib) ;;
+   *) echo "Unknown command: ${0##*/}" >&2; exit 1;;
+  esac
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  case $target in
+   armv7-linux-android*)
+     exec env PATH="${ADR32_PATH}:${PATH}" $cmd $flags "$@" ;;
+   aarch64-linux-android*)
+     exec env PATH="${ADR64_PATH}:${PATH}" $cmd $flags "$@" ;;
+   *) exec $cmd $flags "$@" ;;
+  esac
+#+END_EXAMPLE
+
+The =wrapper= depends on =android-toolchain.config= which can be obtained
+from the [[https://github.com/zw3rk/toolchain-wrapper][zw3rk/toolchain-wrapper]] repository. /The/
+=android-toolchain.config= /will likely need minor modifications,
+encoding the location of the NDK./
+
+Next, we will create symbolic links to the wrapper script:
+
+#+BEGIN_EXAMPLE
+  for target in "armv7-linux-androideabi aarch64-linux-android"; do
+    for command in "clang ld ld.gold nm ar ranlib cabal"; do
+      ln -s wrapper $target-$command
+    done
+  done
+#+END_EXAMPLE
+
+This will produce 14 files (e.g. =armv7-linux-androideabi-clang=), which
+will point to the =wrapper=. The wrapper in turn will build up the
+necessary flags to pass to the command, based on the name of the file.
+/Note: we assume that/ =ld.bfd= /and/ =ld.gold= /accept the same flags./
+
+*** Prerequisites
+    :PROPERTIES:
+    :ID:       D2A72AA8-48A0-4B4C-81EA-0157E2FEA57D
+    :END:
+
+As Android does not ship with iconv by default, and GHC depends on
+iconv, we will need to build it as laid out in [[https://medium.com/@zw3rk/building-iconv-for-android-e3581a52668f][building iconv for
+android]]. Note that you do want to build for both targets: =armv7= and
+=aarch64= and you want to build *static* libraries (pass
+=--enable-shared=no --enable-static=yes= to the =configure= script).  This
+will ease integrating the library into android studio.
+
+To build GHC, we need =ghc= and =cabal=, as well as =alex= and =happy=.  A
+recent GHC version from [[http://downloads.haskell.org/~ghc/8.0.2/][downloads.haskell.org]] should provide =ghc= and
+=cabal=. =alex= and =happy= can then be installed via =cabal=:
+
+#+BEGIN_EXAMPLE
+  cabal install alex happy
+#+END_EXAMPLE
+
+As with the [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94][Haskell cross compiler for Raspberry Pi]], we need to build
+a newer =libffi= from source, due to an incompatibility between the
+/latest release version/ of libffi (/from 2014/), and recent llvm
+versions. With the wrapped toolchain in =PATH=, building =libffi= should
+be as simple as:
+
+#+BEGIN_EXAMPLE
+  git clone https://github.com/libffi/libffi.git
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  cd libffi
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  ./autogen.sh
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  CC="armv7-linux-androideabi-clang" \
+  CXX="armv7-linux-androideabi-clang" \
+          ./configure \
+          --prefix=/path/to/libffi/armv7-linux-androideabi \
+          --host=armv7-linux-androideabi \
+          --enable-static=yes --enable-shared=yes
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  make && make install
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  git clean -f -x -d
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  ./autogen.sh
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  CC="aarch64-linux-android-clang" \
+  CXX="aarch64-linux-android-clang" \
+          ./configure \
+          --prefix=/path/to/libffi/aarch64-linux-android \
+          --host=aarch64-linux-android \
+          --enable-static=yes --enable-shared=yes
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  make && make install
+#+END_EXAMPLE
+
+This will build and place the =libffi= header and libraries for =armv7=
+and =aarch64= into =/path/to/libffi/armv7-linux-androideabi= and
+=/path/to/libffi/aarch64-linux-android=.
+
+As we will also be using GHCs =-staticlib= flag. GHC uses =libtool= for
+=-staticlib=. As the NDK does not ship =libtool=, we need a thin
+wrapper. =libtool-lite= from the [[https://github.com/zw3rk/toolchain-wrapper][zw3rk/toolchain-wrapper]] repository can
+be used instead; it uses =ar= and =ranlib= under the hood. We only need to
+create symbolic links pointing to it:
+
+#+BEGIN_EXAMPLE
+  ln -s libtool-lite armv7-linux-androideabi-libtool
+  ln -s libtool-lite aarch64-linux-android-libtool
+#+END_EXAMPLE
+
+*** Building GHC
+    :PROPERTIES:
+    :ID:       57DC6C3F-C8E7-4310-B983-FF5EA0CFBE63
+    :END:
+
+We need to build GHC for both targets: =armv7= and =aarch64=. With =ghc=,
+=alex=, =happy=, and =cabal= in =PATH=, as well as our wrapped toolchain:
+
+#+BEGIN_EXAMPLE
+  export PATH=$HOME/.cabal/bin:$PATH
+  export PATH=/path/to/bin/ghc:$PATH
+  export PATH=/path/to/wrapped-toolchain:$PATH
+#+END_EXAMPLE
+
+And a copy of the patched GHC:
+
+#+BEGIN_EXAMPLE
+  git clone --recursive git://git.haskell.org/ghc.git
+  cd ghc
+  git remote add zw3rk https://github.com/zw3rk/ghc.git
+  git fetch zw3rk
+  git checkout zw3rk/my-ghc -b my-ghc
+  git submodule update --init --recursive
+#+END_EXAMPLE
+
+Building GHC for =armv7-linux-androideabi= and =aarch64-linux-android=
+should require nothing more than:
+
+#+BEGIN_EXAMPLE
+  # set paths
+  export PREFIX=/my/prefix
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  export LIBFFI=/path/to/libffi
+  export LIBICONV=/path/to/libiconv
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  for target in "armv7-linux-androideabi aarch64-linux-android"; do
+    # Clean up the build tree
+    git clean -x -f -d
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+    # Boot up the build system
+    ./boot
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+    # Configure a GHC that targets $target
+    ./configure --target=$target \
+                --prefix=$PREFIX \
+                --disable-large-address-space \
+                --with-iconv-includes=$LIBICONV/$target/include \
+                --with-iconv-libraries=$LIBICONV/$target/lib \
+                --with-system-libffi \
+                --with-ffi-includes=$LIBFFI/$target/include \
+                --with-ffi-libraries=$LIBFFI/$target/lib
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+    # Create a mk/build.mk and set the BuildFlavour to quick-cross
+    sed -E "s/^#(BuildFlavour[ ]+= quick-cross)$/\1/" \
+      mk/build.mk.sample > mk/build.mk
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+    # Compile and install ghc
+    make -j && make install
+  done
+#+END_EXAMPLE
+
+As this builds two cross compilers (for =armv7= and =aarch64=), this will
+take approximately 60--120 minutes, depending on your hardware.  Once
+done, it should have installed =armv7-linux-androideabi-ghc= and
+=aarch64-linux-android-ghc= into =/my/prefix/bin=.
+
+*** Compiling Hello World
+    :PROPERTIES:
+    :ID:       1931B7F1-EBE0-453A-AC36-05B901C035AA
+    :END:
+
+For Android we need to produce a hello world library, and call the
+native code from an Android app.
+
+The library =Lib.hs= contains a thin wrapper around =hello=, and exposes
+a c function: =char* hello()=.
+
+#+BEGIN_EXAMPLE
+  module Lib where
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  import Foreign.C (CString, newCString)
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  -- | export haskell function @chello@ as @hello@.
+  foreign export ccall "hello" chello :: IO CString
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  -- | Tiny wrapper to return a CString
+  chello = newCString hello
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  -- | Pristine haskell function.
+  hello = "Hello from Haskell"
+#+END_EXAMPLE
+
+Assuming our Android application lives in =/path/to/HelloWorld=, we
+create =/path/to/HelloWorld/app/hs-libs/armeabi-v7a= and
+=/path/to/HelloWorld/app/hs-libs/arm64-v8a=.
+
+We will make use of GHCs =-staticlib= flag has to produce a static
+library that contains the =Lib.o= as well as all dependencies in a
+single =.a= archive.
+
+#+BEGIN_EXAMPLE
+  aarch64-linux-android-ghc -odir arm64-v8a -hidir arm64-v8a \
+     -staticlib -liconv -lcharset \
+     -L/path/to/libffi/aarch64-linux-android/lib -lffi \
+     -o /path/to/HelloWorld/app/hs-libs/arm64-v8a/libhs.a \
+     Lib.hs
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  armv7-linux-androideabi-ghc -odir armeabi-v7a -hidir armeabi-v7a \
+     -staticlib -liconv -lcharset \
+     -L/path/to/libffi/armv7-linux-androideabi/lib -lffi \
+     -o /path/to/HelloWorld/app/hs-libs/armeabi-v7a/libhs.a \
+     Lib.hs
+#+END_EXAMPLE
+
+/Note: The/=-liconv -lcharset= /and/=-L/path/to/libffi... -lffi=
+/arguments are currently necessary, because ghc does not pass them
+properly. The/ =libffi= /arguments are needed only if GHC is configured
+with/ =--with-system-libffi=/./
+
+We will start out with a fresh new android application with including
+*/C++/* and /Kotlin/ support (you can also use Java, the example code will
+be in Kotlin though), with an /Empty Activity/ named =MainActivity=. For
+C++ use the Default Toolchain, and neither support for /exceptions/ nor
+/rtti/ is needed.
+
+In the =CMakeLists.txt= file, we need to tell CMake about our new
+=libhs.a= and that we want to link against =libc=.
+
+Adding the following two =find_library= statements:
+
+#+BEGIN_EXAMPLE
+  # find libc
+  find_library( c-lib
+                c )
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  # find libhs in /path/to/HelloWorld/app/hs-libs/<abi>,
+  # outside of cmakes root search path.
+  find_library( hs-lib
+                hs
+                PATHS ${PROJECT_SOURCE_DIR}/hs-libs/${ANDROID_ABI}
+                NO_CMAKE_FIND_ROOT_PATH )
+#+END_EXAMPLE
+
+and including the found libraries in the final =target_link_library=
+statement
+
+#+BEGIN_EXAMPLE
+  target_link_libraries( # Specifies the target library.
+                         native-lib
+
+                         # Links the target library to the log library
+                         # included in the NDK.
+                         ${log-lib}
+                         ${c-lib}
+                         ${hs-lib}
+                         )
+#+END_EXAMPLE
+
+will instruct CMake to link the =native-lib= which contains our JNI
+bridge to link against the =libhs= as well as =libc=.
+
+Setting the =abiFilters= in the =app/build.gradle= file to
+
+#+BEGIN_EXAMPLE
+  android {
+    ...
+    defaultConfig
+      ...
+      ndk {
+        abiFilters 'armeabi-v7a', 'arm64-v8a'
+      }
+    }
+    ...
+  }
+#+END_EXAMPLE
+
+will tell Android Studio that we only have =armv7= and =aarch64= native
+libraries. Adjusting the =native-lib.cpp= to read
+
+#+BEGIN_EXAMPLE
+  #include <jni.h>
+  #include <string>
+
+  #ifdef __cplusplus
+  extern "C" {
+  #endif
+  extern void hs_init(int * argc, char ** argv[]);
+  extern char* hello(void);
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  JNIEXPORT void
+  JNICALL
+  Java_com_zw3rk_helloworld_MainActivityKt_initHS(
+          JNIEnv *env,
+          jclass /* klass */) {
+      hs_init(NULL,NULL);
+  }
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  JNIEXPORT jstring
+  JNICALL
+  Java_com_zw3rk_helloworld_MainActivity_stringFromJNI(
+          JNIEnv *env,
+          jobject /* this */) {
+      return env->NewStringUTF(hello());
+  }
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  #ifdef __cplusplus
+  }
+  #endif
+#+END_EXAMPLE
+
+will provide the =hello= prototype, which we can use in the
+=stringFromJNI= method to call our =hello()= function. We also have the
+=hs_init= prototype. This one will initialize the haskell runtime and
+should be called *only once*, /prior to calling any haskell function/.
+
+The =MainActivity= class from the =MainActivity.kt= then looks like
+this:
+
+#+BEGIN_EXAMPLE
+  external fun initHS()
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  class MainActivity : AppCompatActivity() {
+
+      override fun onCreate(savedInstanceState: Bundle?) {
+          super.onCreate(savedInstanceState)
+          setContentView(R.layout.activity_main)
+
+          // Example of a call to a native method
+          initHS()
+          val tv = findViewById(R.id.sample_text) as TextView
+          tv.text = stringFromJNI()
+      }
+
+      /**
+       * A native method that is implemented by the 'native-lib'
+       * native library, which is packaged with this application.
+       */
+
+      external fun stringFromJNI(): String
+
+      companion object {
+
+          // Used to load the 'native-lib' library on
+          // application startup.
+          init {
+              System.loadLibrary("native-lib")
+              initHS()
+          }
+      }
+  }
+#+END_EXAMPLE
+
+/Note: as/ [[https://www.reddit.com/r/haskell/comments/6e6fhq/a_haskell_cross_compiler_for_android/di98fwi/][/pointed out/]] /by/ [[https://reddit.com/u/gergoerdi][//u/gergoerdi on/]] [[https://www.reddit.com/r/haskell/comments/6e6fhq/a_haskell_cross_compiler_for_android/][//r/haskell/]] // =onCreate=
+/can be called/ */multiple times/*/. The example code has been updated
+to move/ =initHS= /from/ =onCreate= /to right after the/ =loadLibrary=/./
+
+This is all that is all the source that is needed for our Hello World
+Haskell Android app. The source can be found at
+[[https://github.com/zw3rk/hs-android-helloworld][zw3rk/hs-android-helloworld]].
+
+#+CAPTION: Haskell running on an Android device
+[[https://cdn-images-1.medium.com/max/600/1*XSrHinpQhKfoMH4WLYWXLA.png]]
+
+*** Hello from Haskell
+    :PROPERTIES:
+    :ID:       327C4417-6DFB-4795-8317-D3F43C7EFD13
+    :END:
+
+Finally launching and running the application on the device, we are
+greeted with *Hello from Haskell*.
+
+While the utility of this application is certainly questionable it
+illustrates the essential steps required to build, link and run an
+android application calling a /native/ haskell function.
+
+With this we should be well equipped to build the GHCSlave application
+for android next and be able to also cross compile Template Haskell to
+Android.
+
+** Android and Template Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-05-31-android-and-template-haskell
+   :EXPORT_DATE: <2017-05-31>
+   :ID:       D7898CBA-65AB-450E-BCC0-84F95F62E96C
+   :END:
+
+With the [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-android-8e297cb74e8a][Haskell Cross Compiler for Android]] we built yesterday, and
+the knowledge how to [[https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914][Cross Compiling Template Haskell]], today we will
+build the slave process to run on the Android device to allow to us
+the use of Template Haskell in Android applications.
+
+*** Prerequisites
+    :PROPERTIES:
+    :ID:       720696B8-ECFD-4534-8533-5D66869E7F5F
+    :END:
+
+As we did for the [[http://amzn.to/2qb8k10][Raspberry Pi]], we need to [[https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914][build]] =iserv-proxy= [[https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914][and the]]
+=iserv= [[https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914][library]].  /Please refer to the instructions there if something is
+unclear./
+
+After checking out the custom ghc branch:
+
+#+BEGIN_EXAMPLE
+  git clone --recursive git://git.haskell.org/ghc.git
+  cd ghc
+  git remote add zw3rk https://github.com/zw3rk/ghc.git
+  git fetch zw3rk
+  git checkout -b zw3rk/my-ghc
+  git reset --hard zw3rk/my-ghc
+  git submodule update --init --recursive
+#+END_EXAMPLE
+
+we need to build the =iserv-proxy= with the our regular compiler:
+
+#+BEGIN_EXAMPLE
+  ghc/iserv $ cabal install -flibrary -fproxy
+#+END_EXAMPLE
+
+and the =iserv= library with the cross compilers:
+
+#+BEGIN_EXAMPLE
+  ghc/iserv $ armv7-linux-androideabi-cabal install -flibrary
+  ghc/iserv $ arch64-linux-android-cabal install -flibrary
+#+END_EXAMPLE
+
+*** Building GHCSlave for Android
+    :PROPERTIES:
+    :ID:       93693EA0-B562-44E5-B973-A512860BC318
+    :END:
+
+Similar to the
+[[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-android-8e297cb74e8a][Android
+application we built yesterday]], we need to build a haskell library and
+a wrapper to use the library from the Android app.
+
+The code for the GHCSlave android app can be found in the
+[[https://github.com/zw3rk/ghc-slave][zw3rk/ghc-slave]] repository in
+the =android= folder.
+
+Building the static library for android is a simple as
+
+#+BEGIN_EXAMPLE
+  aarch64-linux-android-ghc -odir arm64-v8a -hidir arm64-v8a \
+     -staticlib -threaded -liconv -lcharset \
+     -L/path/to/libffi/aarch64-linux-android/lib -lffi \
+     -o app/hs-libs/arm64-v8a/libhs.a -package iserv-bin \
+     app/src/main/hs/LineBuff.hs
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  armv7-linux-androideabi-ghc -odir armeabi-v7a -hidir armeabi-v7a \
+     -staticlib -threaded -liconv -lcharset \
+     -L/path/to/libffi/armv7-linux-androideabi/lib -lffi \
+     -o app/hs-libs/armeabi-v7a/libhs.a -package iserv-bin \
+     app/src/main/hs/LineBuff.hs
+#+END_EXAMPLE
+
+Note that we need =-threaded= and the =iserv-bin= package. Threaded
+because the =startSlave= function calls =forkIO= to start the slave in a
+separate thread. And the =iserv-bin= package to embed it into the static
+library. The =LineBuff.hs= is only necessary to set the haskell line
+buffering and get instant feedback, when piping =stdout= and =stderr=
+into a =TextView=.
+
+With the libraries built for both architectures, starting the
+application from android studio should present us with
+
+#+CAPTION: GHCSlave running on android device
+[[https://cdn-images-1.medium.com/max/800/1*47iW4gLArcnMW3NbKjghAw.png]]
+
+*** Compiling some Template Haskell
+    :PROPERTIES:
+    :ID:       B0AD4679-57C4-4829-AD44-F589A830F1F4
+    :END:
+
+We will build a sample application that uses the =gitrev= package to
+show the git revision it was built from in a =TextView=. Pretty similar
+to the Hello World application from
+[[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-android-8e297cb74e8a][yesterday]],
+it will however use Template Haskell.
+
+The application can be found at
+[[https://github.com/zw3rk/hs-hello-templatehaskell][zw3rk/hs-hello-templatehaskell]].
+
+First we will need to install the patched =gitrev= package
+
+#+BEGIN_EXAMPLE
+  git clone https://github.com/mobilehaskell/file-embed.git
+  (cd file-embed && armv7-linux-androideabi-cabal install)
+  (cd file-embed && aarch64-linux-android-cabal install)
+#+END_EXAMPLE
+
+Following the example from yesterday, and using the following =Lib.hs=
+
+#+BEGIN_EXAMPLE
+  module Lib where
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  import Development.GitRev (gitHash)
+  import Foreign.C (CString, newCString)
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  foreign export ccall "gitrev" cgitrev :: IO CString
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  -- | turn $gitHash into a c string.
+  cgitrev = newCString $gitHash
+#+END_EXAMPLE
+
+and compiling it via the GHCSlave will yield the =libhs.a=.
+
+#+BEGIN_EXAMPLE
+  aarch64-linux-android-ghc -odir arm64-v8a -hidir arm64-v8a \
+     -staticlib \
+     -o app/hs-libs/arm64-v8a/libhs.a -package gitrev \
+     app/src/main/hs/Lib.hs \
+     -fexternal-interpreter \
+     -pgmi $HOME/.cabal/bin/iserv-proxy -opti10.0.1.21 -opti500
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  aarch64-linux-android-ghc -odir arm64-v8a -hidir arm64-v8a \
+     -staticlib -liconv -lcharset \
+     -L/path/to/libffi/aarch64-linux-android/lib -lffi \
+     -o app/hs-libs/arm64-v8a/libhs.a -package gitrev \
+     app/src/main/hs/Lib.hs
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  armv7-linux-androideabi-ghc -odir armeabi-v7a -hidir armeabi-v7a \
+     -staticlib \
+     -o app/hs-libs/armeabi-v7a/libhs.a -package gitrev \
+     app/src/main/hs/Lib.hs \
+     -fexternal-interpreter \
+     -pgmi $HOME/.cabal/bin/iserv-proxy -opti10.0.1.22 -opti500
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  armv7-linux-androideabi-ghc -odir armeabi-v7a -hidir armeabi-v7a \
+     -staticlib -liconv -lcharset \
+     -L/path/to/libffi/aarch64-linux-android/lib -lffi \
+     -o app/hs-libs/armeabi-v7a/libhs.a -package gitrev \
+     app/src/main/hs/Lib.hs
+#+END_EXAMPLE
+
+/Note: due to a bug in how ghc currently expects the GHCSlave to find/
+=libiconv= /and/ =libcharset=/, we invoke the compiler twice. The first
+time compiling/ =Lib.hs= /into/ =Lib.o=/, and the second time providing
+all the libraries that should be linked into the final archive. At that
+point we don't need the/ =-fexternal-interpreter= /anymore, as we
+already have an up-to-date copy of/ =Lib.o=/. This limitation should
+soon be lifted. An alternative is to copy/ =libiconv=/,/ =libcharset=/,
+and/ =libffi= /into the/ =app/hs-libs/<arch>= /folder for each folder
+and link them similar to the/ =hs-lib= /in the/ =CMakeLists.txt=/./
+
+With all that setup, we can simply launch the android application from
+android studio and see the git hash as expected.
+
+#+CAPTION: Hello Template Haskell app running on android device
+[[https://cdn-images-1.medium.com/max/800/1*biUjD4l63sx5m8EBi9rHyg.png]]
+
+With this we now have a fully functioning Haskell Compiler with Template
+Haskell support. Another day we will have a look at doing something a
+little more interactive than just displaying a string of text.
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-06-02-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2017-06-02>
+   :ID:       9CD3444C-229B-497C-8AF6-C44A76FA269F
+   :END:
+
+*** May Edition
+    :PROPERTIES:
+    :ID:       79108011-368A-45A4-9D9A-5CADC32C93A8
+    :END:
+
+After the initial [[https://medium.com/@zw3rk/hello-world-a-cross-compilation-survey-890cb95029d7][Cross Compilation Survey]] in April, and the [[https://medium.com/@zw3rk/cross-compilation-survey-results-3988ad1b677b][results]],
+we tried to highlight some of the progress [[https://obsidian.systems][obsidian.systems]] and [[https://zw3rk.com][zw3rk]]
+made.
+
+*** Building a Cross Compiler for Raspberry Pi
+    :PROPERTIES:
+    :ID:       BCCA5FEA-CB1B-4FEB-82D2-5DCD2FFF1C7E
+    :END:
+
+- [[https://medium.com/@zw3rk/quick-headless-raspberry-pi-setup-52ad6dd312c4][Quick Headless Raspberry Pi Setup]]
+- [[https://medium.com/@zw3rk/making-a-raspbian-cross-compilation-sdk-830fe56d75ba][Making a Raspbian Cross Compilation SDK]]
+- [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94][A Haskell Cross Compiler for Raspberry Pi]]
+
+*** Cross Compiling Haskell Code
+    :PROPERTIES:
+    :ID:       06F3B545-C156-4F23-A423-D691B7D6DE50
+    :END:
+
+- [[https://medium.com/@zw3rk/why-use-a-cross-compiler-92322ef46e32][Why
+  use a Cross Compiler?]]
+- [[https://medium.com/@zw3rk/ghcs-cross-compilation-pipeline-ac88972466ec][GHC's
+  Cross Compilation Pipeline]]
+- [[https://medium.com/@zw3rk/the-haskell-cabal-and-cross-compilation-e9885fd5e2f][The
+  Haskell Cabal and Cross Compilation]]
+
+*** Discussing Template Haskell
+    :PROPERTIES:
+    :ID:       93F16533-F8AD-4E00-BF21-146D48D00313
+    :END:
+
+- [[https://medium.com/@zw3rk/template-haskell-75c7b67f9718][Template Haskell]]
+- [[https://medium.com/@zw3rk/template-haskell-and-cross-compilation-16b92f40c6ab][Template Haskell and Cross Compilation]]
+- [[https://medium.com/@zw3rk/cross-compiling-yesod-to-raspberry-pi-f14de6fdbf06][Cross Compiling Yesod to Raspberry Pi]]
+
+*** Building a Cross Compiler for Android
+    :PROPERTIES:
+    :ID:       68EADF51-882B-43DE-82DA-2277C8A64159
+    :END:
+
+- [[https://medium.com/@zw3rk/building-iconv-for-android-e3581a52668f][Building iconv for Android]]
+- [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-android-8e297cb74e8a][A Haskell Cross Compiler for Android]]
+- [[https://medium.com/@zw3rk/android-and-template-haskell-afb7cbf1bff7][Android and Template Haskell]]
+
+This should give a glimpse in what is hopefully to come with GHC 8.4
+and show that mobile haskell is improving! Please go ahead and try
+this out, report back and help us improve the status quo.
+
+I hope you enjoyed the posts and are excited for more! As always you
+can follow us here on medium, on [[https://github.com/zw3rk][github]], or on [[http://twitter.com/zw3rktech][twitter]].
+
+** A Haskell Cross Compiler for iOS
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-06-06-a-haskell-cross-compiler-for-ios
+   :EXPORT_DATE: <2017-06-06>
+   :ID:       440F756E-C544-4339-8DBB-E1DC77EAB905
+   :END:
+
+So far we have built [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94][a Haskell Cross Compiler for Raspberry Pi]], as
+well as [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-android-8e297cb74e8a][a Haskell Cross Compiler for Android]]. To round this off, we
+will build a cross compiler for iOS as well.
+
+With the WWDC signaling the end of 32bit devices and the last 32bit
+devices are the [[http://jamesdempsey.net/ios-device-summary/][iPad (4th gen) and iPhone 5/iPhone 5C]], we will only
+build the 64bit cross compiler. /Note that what Apple calls/ =arm64= /is
+called/ =aarch64= /elsewhere. This is rather unfortunate./
+
+*** The SDK & LLVM
+    :PROPERTIES:
+    :ID:       E545FBBA-AA59-4A59-B803-83ACBE14331D
+    :END:
+
+Apple ships the iOS SDK with Xcode. Hence a recent copy of Xcode from
+the AppStore is required. As Apple does not ship the =opt= and =llc=
+with Xcode, and GHC currently requires =opt= and =llc= from llvm4, we
+need to obtain a copy from the LLVMs
+[[http://releases.llvm.org/download.html][release download website]] as
+well.
+
+*** Toolchain Wrapping
+    :PROPERTIES:
+    :ID:       A9C4D3C8-80D4-4715-A070-F4F6C4DA94FB
+    :END:
+
+Apple provides the =xcrun= utility with automatically sets up the
+toolchain for the tools we need. We however will still need to provide
+the target prefixed aliases for better autotools interop. Credit for the
+initial work on setting this up goes to the
+[[https://github.com/ghc-ios/ghc-ios-scripts][ghc-ios-scripts]], we'll
+use a slightly modified version:
+
+#+BEGIN_EXAMPLE
+  #!/bin/bash
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  name=${0##*/}
+  cmd=${name##*-}
+  target=${name%-*}
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  case $name in
+   *-cabal)
+    fcommon="--builddir=dist/${target}"
+    fcompile=" --with-ghc=${target}-ghc"
+    fcompile+=" --with-ghc-pkg=${target}-ghc-pkg"
+    fcompile+=" --with-gcc=${target}-clang"
+    fcompile+=" --with-ld=${target}-ld"
+    fcompile+=" --hsc2hs-options=--cross-compile"
+    fconfig="--disable-shared --configure-option=--host=${target}"
+    case $1 in
+     configure|install) flags="${fcommon} ${fcompile} ${fconfig}" ;;
+     build)             flags="${fcommon} ${fcompile}" ;;
+     list|info|update)  flags="" ;;
+     "")                flags="" ;;
+     *)                 flags=$fcommon ;;
+    esac
+    ;;
+   aarch64-apple-ios-clang|aarch64-apple-ios-ld)
+    flags="--sdk iphoneos ${cmd} -arch arm64"
+    cmd="xcrun"
+    ;;
+   aarch64-apple-ios-*|aarch64-apple-ios-*)
+    flags="--sdk iphoneos ${cmd}"
+    cmd="xcrun"
+    ;;
+   x86_64-apple-ios-clang|x86_64-apple-ios-ld)
+    flags="--sdk iphonesimulator ${cmd} -arch x86_64"
+    cmd="xcrun"
+    ;;
+   x86_64-apple-ios-*)
+    flags="--sdk iphonesimulator ${cmd}"
+    cmd="xcrun"
+    ;;
+   # default
+   *-nm|*-ar|*-ranlib) ;;
+   *) echo "Unknown command: ${0##*/}" >&2; exit 1;;
+  esac
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  exec $cmd $flags "$@"
+#+END_EXAMPLE
+
+The universal =wrapper= can be obtained from the
+[[https://github.com/zw3rk/toolchain-wrapper][zw3rk/toolchain-wrapper]]
+repository. It contains not only the iOS part above, but also the
+sections for Raspberry Pi and Android and can thus be used for all three
+platforms.
+
+Again we need to create the target prefixed aliases:
+
+#+BEGIN_EXAMPLE
+  for target in "aarch64-apple-ios x86_64-apple-ios"; do
+    for command in "clang ld ld.gold nm ar ranlib cabal"; do
+      ln -s wrapper $target-$command
+    done
+  done
+#+END_EXAMPLE
+
+The
+[[https://github.com/zw3rk/toolchain-wrapper/blob/master/bootstrap][bootstrap]]
+script from the
+[[https://github.com/zw3rk/toolchain-wrapper][zw3rk/toolchain-wrapper]]
+repository will generate all aliases for Android, iOS and Raspberry Pi.
+
+*** Prerequisites
+    :PROPERTIES:
+    :ID:       9B645777-673C-4C78-8F91-8931C2D7BAA5
+    :END:
+
+With the toolchain wrapper and aliases in =PATH= all we need to build
+GHC is =ghc= and =cabal=. Using [[https://brew.sh][homebrew]] getting a
+recent enough copy of =ghc= and =llvm-3.7= should be as easy as
+
+#+BEGIN_EXAMPLE
+  brew install ghc llvm@3.7
+#+END_EXAMPLE
+
+=llvm@3.7= will install =opt-3.7= and =llc-3.7=, which we need for the
+bootstrap compiler. However homebrew installs =ghc= without the version
+suffixes for =llc= and =opt=. This can simply be fixed by replacing
+
+#+BEGIN_EXAMPLE
+  ("LLVM llc command", "llc"),
+  ("LLVM opt command", "opt")
+#+END_EXAMPLE
+
+with
+
+#+BEGIN_EXAMPLE
+  ("LLVM llc command", "llc-3.7"),
+  ("LLVM opt command", "opt-3.7")
+#+END_EXAMPLE
+
+in the =settings= file, which in the case of =ghc= from homebrew is
+located at
+
+#+BEGIN_EXAMPLE
+  /usr/local/opt/ghc/lib/ghc-8.0.2/settings
+#+END_EXAMPLE
+
+We also need =alex= and =happy=, which can be installed with =cabal=
+
+#+BEGIN_EXAMPLE
+  cabal install alex happy
+#+END_EXAMPLE
+
+As we did for Raspberry Pi and Android, we also need libffi for iOS
+
+#+BEGIN_EXAMPLE
+  git clone https://github.com/zw3rk/libffi.git
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  cd libffi
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  ./autogen.sh
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  CC="aarch64-apple-ios-clang" \
+  CXX="aarch64-apple-ios-clang" \
+          ./configure \
+          --prefix=/path/to/libffi/aarch64-apple-ios \
+          --host=aarch64-apple-ios \
+          --enable-static=yes --enable-shared=yes
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  make && make install
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  git clean -f -x -d
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  ./autogen.sh
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  CC="x86_64-apple-ios-clang" \
+  CXX="x86_64-apple-ios-clang" \
+          ./configure \
+          --prefix=/path/to/libffi/x86_64-apple-ios \
+          --host=x86_64-apple-ios \
+          --enable-static=yes --enable-shared=yes
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  make && make install
+#+END_EXAMPLE
+
+/Note: we need to use the/
+[[https://github.com/zw3rk/libffi][/zw3rk/libffi/]] /fork for/ =-ios=
+/support until the/
+[[https://github.com/libffi/libffi/pull/307][/libffi/libffi#307/]] /pull
+request has been merged into the official libffi repository. Or a new
+autoconf release (latest 2.69 is from 2012) is cut and widely
+available./
+
+*** Building GHC
+    :PROPERTIES:
+    :ID:       62F30C91-D3F6-417A-82B8-B6B34489D63E
+    :END:
+
+With =opt= and =llc= from llvm4,=alex=, and =happy= in =PATH=
+
+#+BEGIN_EXAMPLE
+  export PATH=$HOME/.cabal/bin:$PATH
+  export PATH=/path/to/llvm4/bin:$PATH
+  export PATH=/path/to/wrapped-toolchain:$PATH
+#+END_EXAMPLE
+
+building GHC from the patched =my-ghc= branch
+
+#+BEGIN_EXAMPLE
+  git clone --recursive git://git.haskell.org/ghc.git
+  cd ghc
+  git remote add zw3rk https://github.com/zw3rk/ghc.git
+  git fetch zw3rk
+  git checkout zw3rk/my-ghc -b my-ghc
+  git submodule update --init --recursive
+#+END_EXAMPLE
+
+should require nothing more than
+
+#+BEGIN_EXAMPLE
+  # set paths
+  export PREFIX=/my/prefix
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  export LIBFFI=/path/to/libffi
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  for target in "aarch64-apple-ios x86_64-apple-ios"; do
+    # Clean up the build tree
+    git clean -x -f -d
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+    # Boot up the build system
+    ./boot
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+    # Configure a GHC that targets $target
+    ./configure --target=$target \
+                --prefix=$PREFIX \
+                --disable-large-address-space \
+                --with-system-libffi \
+                --with-ffi-includes=$LIBFFI/$target/include \
+                --with-ffi-libraries=$LIBFFI/$target/lib
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+    # Create a mk/build.mk and set the BuildFlavour to quick-cross
+    sed -E "s/^#(BuildFlavour[ ]+= quick-cross)$/\1/" \
+      mk/build.mk.sample > mk/build.mk
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+    # Compile and install ghc
+    make -j && make install
+  done
+#+END_EXAMPLE
+
+and shiny new =aarch64-apple-ios-ghc= and =x86_64-apple-ios-ghc= should
+appear in =$PREFIX/bin= after 60--120 minutes, depending on your
+hardware.
+
+*** Compiling Hello World
+    :PROPERTIES:
+    :ID:       B15DE228-0718-4CA8-BC17-CB33FCD5CD17
+    :END:
+
+Similar to how we built the
+[[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-android-8e297cb74e8a][Hello
+World library for Android]], we are going to build the same Hello World
+library and wrap it into an iOS application.
+
+The =Lib.hs= lirbary with the following code
+
+#+BEGIN_EXAMPLE
+  module Lib where
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  import Foreign.C (CString, newCString)
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  -- | export haskell function @chello@ as @hello@.
+  foreign export ccall "hello" chello :: IO CString
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  -- | Tiny wrapper to return a CString
+  chello = newCString hello
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  -- | Pristine haskell function.
+  hello = "Hello from Haskell"
+#+END_EXAMPLE
+
+exports the =chello= C function, which we will be calling from the iOS
+application to obtain a C string from Haskell. Nothing too exciting yet,
+but it will demonstrate the basic interop.
+
+Creating a simple /Single View Application/ for /iOS/ using /swift/ with
+Xcode should provide the neccessary Application Template for our Hello
+World application. /Using Objective-C would make calling/ =chello= /a
+bit easier. However as Apple has been pushing swift for a while now,
+we'll use swift./
+
+We will need a bridging header to bring the C prototypes into swift. The
+simplest way to do this is to add a new objective c file to the project,
+e.g. =tmp.m=, which in turn will cause Xcode to ask if it should create
+a bridging header. Answer yes and delete =tmp.h=. Add the prototypes we
+need to the =helloworld-Bridging-Header.h=
+
+#+BEGIN_EXAMPLE
+  extern void hs_init(int * argc, char ** argv[]);
+  extern char * hello();
+#+END_EXAMPLE
+
+In the =AppDelegate.swift=, we will call =hs_init= when the application
+did finish launching:
+
+#+BEGIN_EXAMPLE
+  func application(_ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions:
+    [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
+      // Override point for customization after application launch.
+      hs_init(nil,nil)
+      return true
+  }
+#+END_EXAMPLE
+
+Adding a =Label= to the =Main.storyboard=, connecting the =IBOutlet= it
+to the =ViewController.swift=, and setting it's =text= property to the
+result of =hello=
+
+#+BEGIN_EXAMPLE
+  class ViewController: UIViewController {
+    @IBOutlet weak var label: UILabel!
+    override func viewDidLoad() {
+      super.viewDidLoad()
+      label.text = String(cString: hello())
+    }
+  }
+#+END_EXAMPLE
+
+should be sufficient. Before we can build and run the application on an
+actual device, we need to build the Haskell library and tell Xcode to
+link against it.
+
+Compiling into a static libraries for =aarch64= (device) & =x86_64=
+(simulator)
+
+#+BEGIN_EXAMPLE
+  aarch64-apple-ios-ghc -odir arm64 -hidir arm64 \
+     -lffi -L/path/to/libffi/aarch64-apple-ios/lib \
+     -staticlib -o hs-libs/arm64/libhs.a hs/Lib.hs
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  x86_64-apple-ios-ghc -odir x86_64 -hidir x86_64 \
+     -lffi -L/path/to/libffi/x86_64-apple-ios/lib \
+     -staticlib -o hs-libs/x86_64/libhs.a hs/Lib.hs
+#+END_EXAMPLE
+
+and turning them into a *universal library* with both architectures
+combined
+
+#+BEGIN_EXAMPLE
+  lipo -create -output hs-libs/libhs.a \
+    hs-libs/arm64/libhs.a hs-libs/x86_64/libhs.a
+#+END_EXAMPLE
+
+should provide the =libhs.a= static library in the =hs-libs= folder.
+Linking it in Xcode requires to add it, together with /libiconv.tbd/, to
+the *Link Binary With Libraries* section in the *Build Phases* tab of
+the helloworld project in Xcode. As we can not build bitcode only
+libraries with GHC, we also need to set *Enable Bitcode* in the *Build
+Settings* tab to *No*.
+
+Finally running the application on the device should present us with
+
+#+CAPTION: Haskell running on iOS
+[[https://cdn-images-1.medium.com/max/800/1*3L_6ykur6vEOybbdjQBkgw.png]]
+
+** iOS and Template Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-06-07-ios-and-template-haskell
+   :EXPORT_DATE: <2017-06-07>
+   :ID:       8015E9E2-5010-42CF-83F4-2D2CB1BC5D5B
+   :END:
+
+Similar to [[https://medium.com/@zw3rk/android-and-template-haskell-afb7cbf1bff7][Android and Template Haskell]] we need wrap the GHCSlave
+(remote iserv) instance into an application for iOS. To provide the
+Template Haskell evaluation context on the iOS device.
+
+With the [[https://medium.com/p/7cc009abe208/edit][Haskell Cross Compiler for iOS]] from yesterday, we will now
+build the GHCSlave iOS application.
+
+/WARNING: Due to a bug in the x86_64 linker code, Template Haskell
+does not yet work with the iOS Simulator. I have marked the commands
+for the simulator in italic, and will remove this warning, once the
+linker code is fixed. Until then Template Haskell will only work
+for/on the device./
+
+*** Prerequisites
+    :PROPERTIES:
+    :ID:       77A62AFD-64FB-4408-AE55-55F2A3250A3C
+    :END:
+
+Again we need the to [[https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914][build]] =iserv-proxy= [[https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914][and the]] =iserv= [[https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914][library]].  /Please
+refer to the/ [[http://amzn.to/2qb8k10][/Raspberry Pi/]] /instructions if something is unclear./
+
+After checking out the custom ghc branch:
+
+#+BEGIN_EXAMPLE
+  git clone --recursive git://git.haskell.org/ghc.git
+  cd ghc
+  git remote add zw3rk https://github.com/zw3rk/ghc.git
+  git fetch zw3rk
+  git checkout -b zw3rk/my-ghc
+  git reset --hard zw3rk/my-ghc
+  git submodule update --init --recursive
+#+END_EXAMPLE
+
+we need to build the =iserv-proxy= with the our regular compiler:
+
+#+BEGIN_EXAMPLE
+  ghc/iserv $ cabal install -flibrary -fproxy
+#+END_EXAMPLE
+
+and the =iserv= library with the cross compilers:
+
+#+BEGIN_EXAMPLE
+  ghc/iserv $ aarch64-apple-ios-cabal install -flibrary
+  ghc/iserv $ x86_64-apple-ios-cabal install -flibrary
+#+END_EXAMPLE
+
+With this we now should have the =iserv-proxy= binary in =~/.cabal/bin=
+and the =iserv-bin= library for both cross compilers.
+
+*** Building GHCSlave for iOS
+    :PROPERTIES:
+    :ID:       E508AB39-AAE6-488D-A4D2-B4A67EEB1584
+    :END:
+
+We need to build a static library and wrap it into a native iOS
+application.
+
+The code for the GHCSlave android app can be found in the
+[[https://github.com/zw3rk/ghc-slave][zw3rk/ghc-slave]] repository in the =iOS= folder.
+
+In the same fashion as we built the [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-ios-7cc009abe208][universal library]] with =lipo=, we
+will build a universal GHCSlave library as well.
+
+In the =GHCSlave/iOS/GHCSlave= folder we build the static library for
+the iOS device and simulator with =-threaded= and link in the =iserv-bin=.
+
+#+BEGIN_EXAMPLE
+  aarch64-apple-ios-ghc -odir arm64 -hidir arm64 \
+    -staticlib -threaded \
+    -lffi -L/path/to/libffi/aarch64-apple-ios/lib \
+    -o hs-libs/arm64/libhs.a -package iserv-bin \
+    hs/LineBuff.hs
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  x86_64-apple-ios-ghc -odir x86_64 -hidir x86_64 \
+    -staticlib -threaded \
+    -lffi -L/path/to/libffi/x86_64-apple-ios/lib \
+    -o hs-libs/x86_64/libhs.a -package iserv-bin \
+    hs/LineBuff.hs
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  lipo -create -output hs-libs/libhs.a \
+    hs-libs/arm64/libhs.a hs-libs/x86_64/libhs.a
+#+END_EXAMPLE
+
+/Note: we need/ =-threaded= /as the/ =startSlave= /function call/ =forkIO= /to
+start the salve in a separate thread./
+
+Building and running the application on a device should show:
+
+#+CAPTION: GHCSlave running on an iOS device
+[[https://cdn-images-1.medium.com/max/800/1*-v9WylZoLP-X5fgB1AxKOw.png]]
+
+*** Compiling some Template Haskell
+    :PROPERTIES:
+    :ID:       8F7A89DC-6B16-491E-BF0F-7000995A663D
+    :END:
+
+As we did when compiling [[https://medium.com/@zw3rk/android-and-template-haskell-afb7cbf1bff7][Template Haskell for Android]], we will use the
+=gitrev= package to embed the git revision in a label.
+
+The sourcecode for this sample application can be found at
+[[http://github.com/zw3rk/hs-ios-hello-templatehaskell][zw3rk/hs-ios-hello-templatehaskell]].
+
+First we will need to install the patched =gitrev= package
+
+#+BEGIN_EXAMPLE
+  git clone https://github.com/mobilehaskell/file-embed.git
+  (cd file-embed && armv7-linux-androideabi-cabal install)
+  (cd file-embed && aarch64-linux-android-cabal install)
+#+END_EXAMPLE
+
+And similar to the [[https://github.com/zw3rk/hs-ios-helloworld][zw3rk/hs-ios-helloworld]] example from [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-ios-7cc009abe208][yesterday]],
+we'll build a library with the following =Lib.hs=
+
+#+BEGIN_EXAMPLE
+  module Lib where
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  import Development.GitRev (gitHash)
+  import Foreign.C (CString, newCString)
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  foreign export ccall "gitrev" cgitrev :: IO CString
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  -- | turn $gitHash into a c string.
+  cgitrev = newCString $gitHash
+#+END_EXAMPLE
+
+compiling this into a *universal library* with
+
+#+BEGIN_EXAMPLE
+  aarch64-apple-ios-ghc -odir arm64 -hidir arm64 \
+    -staticlib \
+    -L/path/to/libffi/aarch64-apple-ios/lib -lffi \
+    -o hs-libs/arm64/libhs.a -package gitrev \
+    hs/Lib.hs \
+    -fexternal-interpreter \
+    -pgmi $HOME/.cabal/bin/iserv-proxy -opti10.0.1.23 -opti5000
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  x86_64-apple-ios-ghc -odir x86_64 -hidir x86_64 \
+    -staticlib \
+    -L/path/to/libffi/x86_64-apple-ios/lib -lffi \
+    -o hs-libs/x86_64/libhs.a -package gitrev \
+    hs/Lib.hs \
+    -fexternal-interpreter \
+    -pgmi $HOME/.cabal/bin/iserv-proxy -opti10.0.1.24 -opti5000
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+  lipo -create -output hs-libs/libhs.a \
+    hs-libs/arm64/libhs.a hs-libs/x86_64/libhs.a
+#+END_EXAMPLE
+
+and linking it in Xcode, [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-ios-7cc009abe208][as we did yesterday]], will provide us with an
+application that displays the git hash as expected.
+
+#+CAPTION: Hello Template Haskell app running on iOS device
+[[https://cdn-images-1.medium.com/max/800/1*XkzkNHjyQ9_ih7VY2iA3sQ.png]]
+
+We now have a functioning Haskell Compiler with Template Haskell
+support for iOS. /(Again for now without support for the 
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-07-06-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2017-07-06>
+   :ID:       21257468-66A9-4399-9D2B-D88C5D39FA48
+   :END:
+
+*** June Edition
+    :PROPERTIES:
+    :ID:       13D62813-1041-4311-8ABB-7BB96FA4788E
+    :END:
+
+After building the cross compilers Raspberry Pi and Android in
+[[https://medium.com/@zw3rk/what-is-new-in-cross-compiling-haskell-1249881317d5][May]],
+June was only about iOS, as I've been traveling quite a bit in June.
+
+*** Building a Cross Compiler for iOS
+    :PROPERTIES:
+    :ID:       5733F62B-6BFC-412B-9B68-14B955C46ECC
+    :END:
+
+- [[https://medium.com/@zw3rk/a-haskell-cross-compiler-for-ios-7cc009abe208][A
+  Haskell Cross Compiler for iOS]]
+- [[https://medium.com/@zw3rk/ios-and-template-haskell-6305c105b354][iOS
+  and Template Haskell]]
+
+I hope you enjoyed the posts and are excited for more! As always you can
+follow us here on medium, on [[https://github.com/zw3rk][github]], or on
+[[http://twitter.com/zw3rktech][twitter]].
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-08-03-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2017-08-03>
+   :ID:       4F994669-6D04-451F-AD81-1E6FFB58A39D
+   :END:
+
+*** July Edition
+    :PROPERTIES:
+    :ID:       9D201135-5952-47BD-B7D4-432D558B3DEA
+    :END:
+
+Sadly I wasn't able to write anything throughout July. I hope I will be
+able to carve out some time this month to write about the new features
+we have been working on.
+
+The focus has mainly been on making the compilation experience for cross
+compilers as pleasant as possible and figuring out how to build binary
+distributions of GHC cross compilers.
+
+One of the rather annoying kludges has been the need for the
+=libtool-lite= script on some platforms; this should be unnecessary
+soon. And while we still need the wrapper file for cabal,
+[[https://github.com/haskell/cabal/pull/4617][cabal has learned about]]
+=-staticlib=, and =new-build= can now be used to produce a static
+library of the project (with GHCs that support =-staticlib=).
+
+I hope you are excited for the posts to come! As always you can follow
+us here on medium, on [[https://github.com/zw3rk][github]], or on
+[[http://twitter.com/zw3rktech][twitter]].
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-09-05-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2017-09-05>
+   :ID:       C2EF7ED5-4F6E-4203-8FCF-4BCA2F6C0605
+   :END:
+
+*** August Edition
+    :PROPERTIES:
+    :ID:       CEBC6BDB-7E98-4E53-AE8E-76E9C2327B29
+    :END:
+
+The little time I manged to carve out for this project in August has
+been spent on building a new llvm backend. Or more precisely to start
+integrating the llvm bitcode backend I worked on last year into ghc.
+
+The current status of the =-fllvmng= backend is that it can compile GHC,
+but fails to validate. I believe most of these validation failures
+should be fairly trivial so solve. Unless we run into
+[[http://phabricator.haskell.org/D3904][interesting bugs]] again.
+
+I dont believe I will mange to get much done in terms of actual code
+this week, as I'm attending ICFP in Oxford. If you are around, please
+say hi!
+
+I hope you are excited for the posts to come! As always you can follow
+us here on medium, on [[https://github.com/zw3rk][github]], or on
+[[http://twitter.com/zw3rktech][twitter]].
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-10-08-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2017-10-08>
+   :ID:       D6D57C50-1A46-4167-B816-6DB3D7A53A99
+   :END:
+
+*** September Edition
+    :PROPERTIES:
+    :ID:       083A864E-2127-4347-8358-136FB1AD2337
+    :END:
+
+ICFP was a blast, and I think we made quite some progress in getting
+some of the cross compilation diffs merged. Facetime does pay off!
+
+The Q monad extension for template haskell
+([[https://phabricator.haskell.org/D3608][D3608]]) will need some
+adjustments going forward. I hope these will be sorted out by the end of
+October.
+
+Herbert Valerio Riedel
+[[https://mail.haskell.org/pipermail/ghc-devs/2017-September/014682.html][announced
+the head.hackage hackage overlay]]. This allows to have a set of patches
+which are turned into a separete hackage repository, and the packages
+are picked from that repository rather than from the upstream hackage
+repository if a patched package exists. This is somewhat similar to how
+[[https://eta-lang.org][Eta]]'s Etlas works. Though as far as I
+understand, Etlas does the patching on the client side, whereas the
+hackage overlay approach patches the packages on the server side and
+provides a separte hackage repository, which takes preceedence over the
+upstream hackage repository.
+
+As such I've asked Herbert to give me a jump start on builing hackage
+overlays and now
+[[http://hackage.mobilehaskell.org][hackage.mobilehaskell.org]] is live.
+It contains so far only a single patched package, namely =zlib=. The
+patch works around a cross compilation complication with =hsc2hs=. The
+patches can be found in the
+[[https://github.com/mobilehaskell/hackage-overlay][mobilehaskell/hackage-overlay]]
+github repository.
+
+[[http://hackage.mobilehaskell.org][hackage.mobilehaskell.org]] also
+contains a highly experimental preview of ghc binary distributions with
+iOS, Android and Raspberry Pi cross compilers for macOS Sierra, as well
+as Android and Raspberry Pi cross compilers for Linux (debian 8) built
+with the =llvmng= llvm backend.
+
+I hope to write some more about the =llvmng= backend, the hackage
+overlay, as well as the binary distributions throughout October.
+
+** GHC Cross Compiler Binary Distributions
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-10-20-ghc-cross-compiler-binary-distributions
+   :EXPORT_DATE: <2017-10-20>
+   :ID:       112673BE-4DB3-431E-A69C-CBD1151E4905
+   :END:
+
+As mentioned in the September Edition of
+[[https://medium.com/@zw3rk/what-is-new-in-cross-compiling-haskell-976cd4752bb9][What
+is New in Cross Compiling Haskell]], I've been working on producing
+binary distributions of cross compilers, so that installing a cross
+compiler becomes almost as trivial as installing a GHC binary
+distribution.
+
+A word of caution is in order. /These are rather experimental builds,
+and realistically I expect there to be a few issues, that will arise.
+I'd still appreciate early feedback so that we can iron out the wrinkles
+quickly!/
+
+I've build binary distributions for from /macOS Sierra/ to /iOS,
+Android/ and /Raspberry Pi/, as well as binary distributions from
+/Debian 8/ to /Android/ and /Raspberry Pi/.
+
+So head on over to
+[[http://hackage.mobilehaskell.org][hackage.mobilehaskell.org]] and grab
+the binary distribution of your choice.
+
+*** Prerequisites
+    :PROPERTIES:
+    :ID:       4CEA3B94-374C-4E51-AD8A-F4E443798F65
+    :END:
+
+For iOS development, the iOS SDK that is shipped with Xcode is required.
+For Android you will need the Android NDK, and
+[[https://medium.com/@zw3rk/building-iconv-for-android-e3581a52668f][iconv
+for Android]]. For Raspberry Pi, you will need to creat the
+[[https://medium.com/@zw3rk/making-a-raspbian-cross-compilation-sdk-830fe56d75ba][Raspbian
+SDK]].
+
+You will also need a copy of LLVM5 in =PATH=. As well as a copy of the
+bootstrapped toolchain wrapper.
+
+#+BEGIN_EXAMPLE
+  $ git clone https://github.com/zw3rk/toolchain-wrapper.git
+  $ cd toolchain-wrapper
+  toolchain-wrapper $ ./bootstrap
+  $ export PATH="$(PWD)/toolchain-wrapper:$PATH"
+#+END_EXAMPLE
+
+Note: /you may need to adjust the/ =*-toolchain.config= /file to match
+your toolchain paths./
+
+*** Installing the binary distribution
+    :PROPERTIES:
+    :ID:       CE6783DA-5CFD-4A44-8ED8-2F4022DDC5A1
+    :END:
+
+While I hope that installing the binary distributions will eventually be
+as simple as =./configure --prefix=... && make install= for now you will
+likely need to provide =--target=... --host=... --build=...= as well.
+E.g. for the =aarch64-unknown-linux-android= on Debian 8, you would
+provide:
+
+#+BEGIN_EXAMPLE
+  ./configure --prefix=... \
+              --target=aarch64-linux-android \
+              --host=x86_64-pc-linux-gnu \
+              --build=x86_64-pc-linux-gnu
+  make install
+#+END_EXAMPLE
+
+to satisfy the =configure= script.
+
+*** Where to go from here
+    :PROPERTIES:
+    :ID:       5B7380BB-4ECF-4651-9AF8-12ABC7A46C79
+    :END:
+
+You should now be able to compile a simple
+
+#+BEGIN_EXAMPLE
+  main = putStrLn "Hello World"
+#+END_EXAMPLE
+
+haskell file with your =<target>-ghc= for your target. Note that for iOS
+and Android you would likely want to use =-staticlib= to produce a
+static archive to link with your application.
+
+*** Bugs & Issues
+    :PROPERTIES:
+    :ID:       1678AF12-83D7-4257-9962-2EE24A3A09BD
+    :END:
+
+Please file any bug and issues you run into with the
+[[https://github.com/mobilehaskell/hackage-overlay/issues][hackage-overlay]]
+issue tracker. That way we will have a central issue and knowledge base.
+
+** Building GHC: The package database
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-10-30-building-ghc-the-package-database
+   :EXPORT_DATE: <2017-10-30>
+   :ID:       312680A9-9602-4F39-9CB6-4F8ED576209B
+   :END:
+
+Over the next few posts, I will explore how the Glasgow Haskell
+Compilers build system works. I will try not to go into too much detail
+how make based build system, and focus on the high level process and how
+to arrive at the final compiler.
+
+As we will have to deal with package databases, let us take a look at
+packages and package databases today.
+
+*** Packages
+    :PROPERTIES:
+    :ID:       3C52139F-E10D-45B3-9855-03284C3EF8F5
+    :END:
+
+While we usually build packages for use with GHC via =cabal=, the
+packages GHC knows about are those registered in the known (to GHC)
+package database(s). The global package database usually resides next to
+the =ghc= binary and is called =package.conf.d=.
+
+To GHC, a package consists of a package specification and a collection
+of interface files =.hi= together with one or more archives =.a= of
+objects, =.so= / =.dylib= / =.dll= shared libraries and one merged =.o=
+object file for use with GHCi in a folder named =$name-$version=. /(The/
+=$name-$version= /is also known as the installed package id or
+unit-id)/. The package specification will contain the package name and
+version, exposed modules, libraries, dependencies, and other package
+metadata. The details can be found in
+[[https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/packages.html][GHC
+User's Guide]].
+
+Thus, if you don't have or don't want to use =cabal=, you could build
+your own package from scratch. Just collect the interface files =.hi=
+and the libary in a folder and write the package specification.
+
+*** Package Database
+    :PROPERTIES:
+    :ID:       40A042F9-7126-4FEE-9658-1A53F1C5253B
+    :END:
+
+The package database, is the =package.conf.d= folder as mentioned above.
+It contains all the package specification as =$name-$version.conf=.
+These contain the information about the library, search paths, where to
+find the archives and (shared) objects and more.
+
+In addition to the =.conf= files, it also contains a cache file. If you
+simply drop your package specification into the =package.conf.d= folder,
+the package database won't see it. For this we need the =ghc-pkg= tool
+to rebuild the cache.
+
+*** The =ghc-pkg= Tool
+    :PROPERTIES:
+    :ID:       7262ECA6-E648-48D3-BD3A-271D27598433
+    :END:
+
+To make dealing with =package.conf.d= easier, GHC comes with the
+=ghc-pkg= tool, which provides a rich set of commands to interact with
+the package database. For example, to update the cache after dropping a
+specification into the database by hand, one would run
+
+#+BEGIN_EXAMPLE
+  $ ghc-pkg recache
+#+END_EXAMPLE
+
+to rebuild the =package.cache= file.
+
+If you want to restrict the packages available to your GHC, you could
+for example create your own empty database, and copy over packages from
+a different database using:
+
+#+BEGIN_EXAMPLE
+  $ ghc-pkg --expand-pkgroot describe base | \
+      ghc-pkg --global-package-db package.conf.d register -
+#+END_EXAMPLE
+
+This will read =base= from the global package db, dump the content of
+it's specification to =stdout= and register that package in the database
+located at =package.conf.d= by reading the specification from =stdin=
+(via =-=).
+
+The =--expand-pkgroot= is necessary because this will only copy the
+specification, it will not copy the contents (interface files,
+libraries, ...). If the package used package database relative paths, we
+want to expand them, prior to registering the package in a different
+package database.
+
+You will need to use some =--force= if you intent to register a package
+without it's dependencies in a new package database. Because GHC can
+also deal with a stack of package databases, and you can control this
+stack either via =GHC_PACKAGE_PATH= or the =-[no-]global-package-db=,
+=-[no-]user-package-db= and =package-db= flags, your packages in one
+database can have dependencies on packages in another database.
+
+*** Summary
+    :PROPERTIES:
+    :ID:       06E7DD51-3D8C-4249-88FA-27A7B2975FB0
+    :END:
+
+GHC knows about packages through package database(s). Packages do not
+necessarily need to be created with =cabal=, we can create our own
+package from scatch if we really wanted to. /(Though using/ =cabal= /or
+the/ =Cabal= /library makes dealing with it much easier)./
+
+=ghc-pkg= is the command line interface tool to interact with package
+database.
+
+Next time we will look at a few more of the tools used in building GHC,
+to have the necessary foundation to build GHC.
+
+** Building GHC: The tools
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-11-11-building-ghc-the-tools
+   :EXPORT_DATE: <2017-11-11>
+   :ID:       460157BA-0A68-43E3-911A-053D0271A5EF
+   :END:
+
+After
+[[https://medium.com/@zw3rk/building-ghc-the-package-database-50c37cf6ce33][getting
+to know package databases]] we are going to look into the set of tools
+that are used when building the Glasgow Haskell Compiler.
+
+*** alex & happy
+    :PROPERTIES:
+    :ID:       6D6703B3-5302-4F53-B0ED-0D0974AD8FEC
+    :END:
+
+[[https://www.haskell.org/alex/doc/html/index.html][alex]] is a tool to
+generate lexical analysers in Haskell, and as such can turn =.x= files
+into =.hs= files.
+[[https://www.haskell.org/happy/doc/html/index.html][happy]] is a parser
+generator, which can turn =.y= files into =.hs= files.
+
+*** ghc-pkg
+    :PROPERTIES:
+    :ID:       01CBE4FE-EDFD-465E-BC95-3E3D8431E8EC
+    :END:
+
+We saw during
+[[https://medium.com/@zw3rk/building-ghc-the-package-database-50c37cf6ce33][getting
+to know package databases]]. It is the command line interface to the
+package databases.
+
+*** ghc-cabal
+    :PROPERTIES:
+    :ID:       1673F0A2-B86A-4844-8F2A-D43AE39D0616
+    :END:
+
+While cabal comes with the =Cabal= library and the =cabal= command line
+tool in the =cabal-install= package. The build system needs an easy way
+to just extract values from =.cabal= files and add some customizations
+to configuring, copying, and registering packages via cabal. This is
+what =ghc-cabal= is for. It produces the =package-data.mk= file, which
+is a Makefile that contains information from the =.cabal= file, such as
+it's Haskell Sources, C Sources, ... and as such provides the Make based
+build system with sufficient information to build all the libraries.
+/Yes, we do/ */not/* /use/ =cabal= /to build GHC./
+
+*** deriveConstants
+    :PROPERTIES:
+    :ID:       4C1A5327-741B-4901-827D-76E22C34F5DB
+    :END:
+
+This utility is used during the build process to generate header files
+containing constant values (word sizes, ...) of the target platform and
+when the compiler is built those are included to provide those target
+specific information.
+
+*** hsc2hs
+    :PROPERTIES:
+    :ID:       CBC0E32F-F14C-43B4-B63E-C698F761DA9B
+    :END:
+
+When binding to C libraries, the process can be quite tedious and
+=hsc2hs= tries to make this a bit easier. It is also used quite a lot
+outside of GHC itself. It even has its own
+[[http://downloads.haskell.org/~ghc/master/users-guide/utils.html#writing-haskell-interfaces-to-c-code-hsc2hs][GHC
+User's Guide entry]].
+
+*** genapply & genprimopcode
+    :PROPERTIES:
+    :ID:       CE68BA1C-9076-4862-8F07-1BCD6C6C1245
+    :END:
+
+GHCs runtime system needs to apply functions of various arities when
+evaluating a program. =genapply= produces the =AutoApply.cmm= file which
+is part of the =rts= package. The =AutoApply.cmm= file defines the
+standard closures used to represent application of functions of various
+artities.
+
+Functions that can not be implement in Haskell directly are called
+Primitive Operations (PrimOps) while these functions are provided
+natively by GHC, the =genprimopcode= utility uses a highlevel
+description of the PrimOps in the =compiler/prelude/primops.txt.pp= and
+produces the necessary plumbing around them: header files, curried
+wrappers, haddock information.
+
+*** touchy
+    :PROPERTIES:
+    :ID:       918F773E-2BB4-403A-B599-6397032AD6A3
+    :END:
+
+While unix systems have the =touch= command. Windows does not. As GHC
+uses =touch= during building and compilation of Haskell files, =touchy=
+is required on Windows as a substitute.
+
+*** unlit
+    :PROPERTIES:
+    :ID:       8F075199-7726-4C31-AE88-E051D0B570EC
+    :END:
+
+As GHC has support for Literate Haskell, it needs to be able to extract
+the Haskell source from a =.lhs= source file. =unlit= is the filter that
+can stirp the literate part out of a =.lhs= file and just leave
+the =.hs= part.
+
+--------------
+
+*** compareSizes
+    :PROPERTIES:
+    :ID:       F38481AD-56EF-4A14-9983-77E83FDFE12C
+    :END:
+
+When comparing two ghc builds, it can be of interest to see whether or
+not the file size of haskell interface files (=.hi=) or objects (=.o=)
+has increased or decreased. As such the compareSizes utility is not
+essential to build GHC, but useful when trying to gauge what effect a
+change has on interface and object file sizes.
+
+*** hp2ps
+    :PROPERTIES:
+    :ID:       852CB382-A526-440E-A4B8-655CA744F1E8
+    :END:
+
+The =hp2ps= tool is also widely used. It turns a heap profile generated
+by GHC into a (hopefully) easier to undertand graphical representation.
+
+*** ghctags
+    :PROPERTIES:
+    :ID:       F6E4EA70-E9C8-4DFE-823C-9676CF241ECE
+    :END:
+
+=vim= and =emacs= can read so called =TAGS= files, which provide an
+index to source-code definitions of function, variables, and other
+points of interest.
+
+=ghctags= is capable of generating such a file for Haskell sources. As
+such it is also a not an essential utility to /build/ GHC.
+
+*** hpc
+    :PROPERTIES:
+    :ID:       538DE390-5834-4840-B4CF-43BF22E5FA7F
+    :END:
+
+The =hpc= tool can be used to generate code coverage reports for Haskell
+code. It even has it's own
+[[https://wiki.haskell.org/Haskell_program_coverage][page on the haskell
+wiki]].
+
+--------------
+
+In conclusion I hope this was somewhat informative. And while not all
+tools are strictly used to /build/ GHC. I believe this covers all the
+utilities that are part of the GHC source tree.
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-11-11-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2017-11-11>
+   :ID:       26C6DE66-4019-43CC-9788-9D861DAC8ABA
+   :END:
+
+*** October Edition
+    :PROPERTIES:
+    :ID:       9B7235BD-7404-40AF-95F5-A3E3D9A303E4
+    :END:
+
+After the announcement and release of experimental cross compiler
+previews as binary distributions
+[[https://medium.com/@zw3rk/what-is-new-in-cross-compiling-haskell-976cd4752bb9][last
+month]], it turned out that binary distributions produced by the make
+base build system were not what I had hoped for.
+
+[[https://ghc.haskell.org/trac/ghc/wiki/Status/GHC-8.4.1][GHC 8.4.1]] is
+around the corner (Release in February 2018. Cut release branch in
+November 2017.) and will come with a new
+[[http://shakebuild.com][shake]] based build system called
+[[http://github.com/snowleopard/hadrian][hadrian]], which has been in
+development for quite some time. The plan --- I believe --- is that the
+make based and the shake based build system will both be with us until
+hopefully the make base one will eventually be dropped.
+
+After investigating the current make based build system trying to
+produce better cross compiler binary distributions, I bit the bullet and
+went ahead with hadrian.
+
+This also lead to the first part of a series of posts on how GHCs build
+system works:
+[[https://medium.com/@zw3rk/building-ghc-the-package-database-50c37cf6ce33][Building
+GHC: The package database]]. More of which I plan to write up soon.
+
+My ideal cross comiler binary distrubion is an compressed archive (zip,
+tar.xz) that contains a =bin= and =lib= folder. Simply unpacking it and
+running =bin/ghc= should be enough (or in the case of a cross compiler
+=bin/<arch>-<vendor>-<os>-ghc=). This however requires that the
+distribution is relocatable. While we build relocatable builds for
+Windows, we do not for other platforms.
+
+To achieve this, it would be great if the build system would place the
+package database relocatable into =lib= and the binaries into =bin=. All
+that would be needed to build the binary distribution then would be to
+archive and compress those two folders.
+
+To that extend I've spent some time patching GHC, Cabal and hadrian to
+make this possible. This has lead to a rather
+[[https://github.com/snowleopard/hadrian/pull/445][large hadrian fork]].
+
+I hope this will provide the foundation to provide better binary
+distributions for the cross compilers. As such stay tuned for new binary
+distribution releases and hopefully me getting back to actually cross
+compilation stuff rather than build system logic.
+
+** Building GHC: The Stages
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-11-22-building-ghc-the-stages
+   :EXPORT_DATE: <2017-11-22>
+   :ID:       12C04283-4830-4123-A235-7ADCB05A132B
+   :END:
+
+In [[https://medium.com/@zw3rk/building-ghc-the-package-database-50c37cf6ce33][part one]] we learned about the package database.  [[https://medium.com/@zw3rk/building-ghc-the-tools-3d170a4db06c][Part two]] then
+introduced the tools and programs built when building GHC. In this
+part we will look at how the actual stages are built. I will not go
+into the detail of the make based build system, but try to give an
+overall understanding what is happening conceptually.
+
+To build GHC usually involves running:
+
+#+BEGIN_EXAMPLE
+  ./boot                                   (1)
+  ./configure --prefix=/usr/opt            (2)
+  make -j                                  (3)
+  make install                             (4)
+#+END_EXAMPLE
+
+Let's break down what is happening here: running =./boot= generates
+=ghc.mk= make files throughout the source tree unless the folder already
+contains one. It also runs =autoreconf= where necessary (e.g. if there
+exists a =configure.ac= file, =autoreconf= is run to turn those into
+=configure= scripts for the respective libraries).
+
+The next step, running =./configure= (which can be take a few
+parameters, see =./configure --help=) runs a battery of detection
+functions to collect information about the machine GHC is built
+on. This includes but is not limited to paths to tools, the
+architecture, operating system, if the system builds Position
+Independent Executables by default, and more. The collected results
+will then be substituted in =.in= files in the build system producing
+files without the =.in= extension where those values are embedded
+(e.g. turns =settings.in= into =settings=).
+
+At this point we now have primed the source tree to contain the
+necessary build (and possibly target specific) information to be used
+throughout building GHC.
+
+=make= will then run the make build system to produce =ghc=, the package
+database to be shipped with =ghc= and other utilities (e.g. =ghc-pkg=).
+
+Finally =make install= will move those into place, which would be
+=/usr/opt= in the example above. At this point the GHC build system is
+done.
+
+--------------
+
+With that out the door, let's take a closer look what =make= actually
+does. GHC is built in *stages*. And there are usually three stages
+involved. We build the /stage 1 compiler/ with the /stage 0 compiler/, and
+the /stage 2 compiler/ with the /stage 1 compiler/.
+
+Stage 0 is the /bootstrap stage/. The bootstrap stage is built by the
+/bootstrap ghc/ this is the GHC that is already present on the system.
+The bootstrap ghc comes with it's package database that was installed
+when the bootstrap compiler was installed.
+
+*** Building the stage 1 compiler
+    :PROPERTIES:
+    :ID:       82CA8D5C-622B-49FD-9805-D1512D2D8C82
+    :END:
+
+As the compiler quite often depends on features of libraries it
+depends on that are not guaranteed to be new enough in the bootstrap
+compilers package database, the first step is to augment the bootstrap
+compilers package database with those required packages to build the
+Stage 1 compiler. To do this, we compile this set of /bootstrap
+packages/ with the bootstrap compiler.
+
+#+CAPTION: My stage0 package database.
+[[https://cdn-images-1.medium.com/max/800/1*Yy35bpqSR_ejoxMut0J6yA.png]]
+
+/Note: my stage 0 package database contains the/ =data-bitcode-*= /packages
+which make up my/ =llvm-ng= /backend./
+
+From the =base= version =4.10.0.0= we can infer that this is likely the
+package database that was shipped with ghc =8.2.1=.
+
+The =ghc-8.3= package will not be in the package database initially,
+however we can see that all it's dependencies are part of the package
+database. As such building the actual =ghc= executable with the
+/bootstrap compiler/ is now possible. So we move on to build =ghc=,
+=ghc-pkg=, =hsc2hs= and other tools with the /bootstrap compiler/. These
+together with the the augmented bootstrap package database constitute
+the /stage 1/ now.
+
+*** Building the stage 2 compiler
+    :PROPERTIES:
+    :ID:       119CCFA0-1BE3-4762-9EF7-EB7CD02E6325
+    :END:
+
+With the /stage 1/ compiler, and the augmented bootstrap package
+database, we proceed by compiling all libraries that ship with GHC and
+register them in the /stage 1 package database/ (these are packages
+built /with/ the /stage 1 compiler/). And we finally build the =ghc= with
+the /stage 1 compiler/ as well as other utilities we want to ship with
+the /stage 2 compiler/.
+
+#+CAPTION: My stage1 package database.
+[[https://cdn-images-1.medium.com/max/800/1*2UOLozz3AUW60NBmzR2-4g.png]]
+
+We could now iterate this process again and obtain a /stage 3 compiler/
+built with the /stage 2 compiler/, or go on and build and register
+additional packages into the /stage 1 package database/ with the /stage 2
+compiler./ I hope the idea and approach should be sufficiently
+illustrated at this point.
+
+#+BEGIN_QUOTE
+  So why did we need to build the compiler /twice/, wouldn't the /stage 1
+  compiler/ and the /stage 1 package database/ have been enough?  That's
+  a good question! We need to build the /stage 2 compiler/ with the
+  /stage 1 compiler/ using the /stage 1 package database/ (the one we will
+  ship with the /stage 2 compiler/). As such, the compiler is built with
+  the identical libraries that it ships with. When running /
+  interpreting byte code, we need to dynamically link packages and
+  this way we can guarantee that the packages we link are identical to
+  the ones the compiler was built with. This it is also the reason why
+  we don't have GHCi or Template Haskell support in the /stage 1
+  compiler/.
+#+END_QUOTE
+
+*** A binary distribution
+    :PROPERTIES:
+    :ID:       CEFB477C-3D56-4D2D-9F2A-468E1AF24EBC
+    :END:
+
+To build a binary distribution from our final /stage 2 compiler/ we only
+need the =ghc= (built with the /stage 1 compiler/ which was built with the
+/bootstrap compiler/) together with the /stage 1 package database/ (built
+with the /stage 1 compiler/). There is some additional packaging logic,
+which I will not go into, but only mention: we package an additional
+=configure= script to adapt the system on which GHC will ultimately be
+installed, and make sure the wrapper scripts around GHC all contain
+the correct absolute paths, and additional files (e.g.  =settings=) are
+included in the binary distribution as well.
+
+This completes this mini series on Building GHC. If you have further
+questions, please ask!
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-12-08-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2017-12-08>
+   :ID:       F718D9B6-70E4-4A20-A2A1-2B817EFB2B0A
+   :END:
+
+*** November Edition
+    :PROPERTIES:
+    :ID:       DFC8AF1D-B988-4915-A2CB-B1C6D1A43E9F
+    :END:
+
+Wow, it's December already! So what happened last month? As I detailed
+in the [[https://medium.com/@zw3rk/what-is-new-in-cross-compiling-haskell-b70decd4b3a6][October Edition]] I have been working on a [[https://github.com/snowleopard/hadrian/pull/445][hadrian fork]], that
+should allow us to build relocatable binary distributions for GHC, and
+specifically for cross compilers. This work has seen quite some
+improvement (in hadrian and cabal), and I am now able to build
+relocatable binary distributions of GHC cross compilers and if there
+are no more obstacles, the should be ready soon. So keep an eye out
+for changes on [[http://hackage.mobilehaskell.org][hackage.mobilehaskell.org]], or just follow
+[[https://twitter.com/mobilehaskell][@mobilehaskell]] where I'll announce updates when they are ready.
+
+Also [[https://medium.com/@zw3rk/building-ghc-the-tools-3d170a4db06c][part 2]] and [[https://medium.com/@zw3rk/building-ghc-the-stages-2c6cf6fc4b29][part 3]] to complement the [[https://medium.com/@zw3rk/building-ghc-the-package-database-50c37cf6ce33][first part]] of /Building GHC/
+were published. I hope they provide some insight into how the GHC
+build system works. This naturally came up while hacking on hadrian.
+
+[[https://github.com/alpmestan][Alp Mestanogullari]] has started helping out with the hadrian. To get
+hadrian into a state where it can produce proper installable
+distributions. As this is easier with relocatable binary
+distributions, he has taken my branch as a basis for this. I hope
+we'll be able to merge chunks of the branch back into the upstream
+hadrian soon.
+
+I've also started accepting donations via Patreon or crypto currencies
+(e.g. see the [[https://medium.com/@zw3rk/building-ghc-the-stages-2c6cf6fc4b29][Building GHC: The Stages]] post. As such if you want to
+support this endeavor, you now can!
+
+As we've now got recording gear for our [[http://haskell.sg][haskell.sg]] Meetups, I hope to
+be able to present more on cross compilation and have recording of it
+up afterwards. The first two recordings of the November talk, head
+over to the [[https://www.youtube.com/playlist?list=PLbjcAmsCYuS4xspQb5BHnIHhi4BrWteGz][haskell.sg youtube channel]]. I hope to get around uploading
+the December recordings over the weekend. However due to the
+microphone dying during the first talk, we might only have the second
+talk properly recorded.
+
+On a final note: if you have something specific on you'd like me to
+write about, let me know!
+
+** Relocatable GHC Cross Compiler Binary Distributions
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-12-20-relocatable-ghc-cross-compiler-binary-distributions
+   :EXPORT_DATE: <2017-12-20>
+   :ID:       08AD422B-23E8-4296-82DC-895FE35BCBA4
+   :END:
+
+#+BEGIN_QUOTE
+  */TLDR/*/: Watch the videos at the end of this article and grab your
+  cross compilers from/ [[http://hackage.mobilehaskell.org/][/http://hackage.mobilehaskell.org/]]
+#+END_QUOTE
+
+It's been a while since the [[https://medium.com/@zw3rk/ghc-cross-compiler-binary-distributions-490bb2c0c411][GHC Cross Compiler Binary Distributions]]
+post. A primary issue was installation. Specifically the =./configure=
+and =make install= logic that is part of GHCs binary distributions. This
+is necessary for GHC to install properly and setup the =settings= file,
+which contains system specific information that can only be detected
+on the final host. These include for example a check to see if the
+host does position independent executables (PIE) by default or not;
+and if not detected properly will result in a compiler that can not
+produce binaries for the host.
+
+For cross compilers this is a little different, as they are tightly
+coupled to the cross compilation tool chain. As such there is less
+freedom in how the final host will behave and a lot more knowledge
+about the hosts tool chain and the final target are known at build
+time and many of the checks performed in the =./configure= script are
+not suited for the installation of a cross compiler.
+
+To that end, as I've mentioned in [[https://medium.com/@zw3rk/what-is-new-in-cross-compiling-haskell-b70decd4b3a6][What is New in Cross Compiling
+Haskell: October Edition]] and [[https://medium.com/@zw3rk/what-is-new-in-cross-compiling-haskell-56b9385ed93][What is New in Cross Compiling Haskell:
+November Edition]], I've put a lot of effort into allowing the [[http://shakebuild.com/][shake]]
+base [[https://github.com/snowleopard/hadrian/][GHC build system]], and cabal to produce relocatable binary
+distributions of GHC.
+
+What do I mean by relocatable binary distributions? Essentially that
+you can just grab the tar or zip archive of GHC, unpack it and execute
+=bin/ghc= with no need to actually run =./configure= and =make install= if
+your system is similar enough to the build system (e.g. the usual case
+for cross compilers with a deterministic cross compilation tool
+chain). If you still need to adapt GHC to your host, you can
+run =./configure= right inside the unpacked folder prior to executing
+=bin/ghc=. [[https://github.com/alpmestan][Alp Mestanogullari]] has done a fantastic job in bringing
+the =./configure= logic to the relocatable binary distributions and is
+working on getting tests and documentation working with relocatable
+binary distributions as well!
+
+One of the major benefits of the relocatable binary distributions is
+that when GHC is built, it builds into =_build/stage<N>/bin= and
+=_build/stage<N>/lib= and those folders can be freely moved around for
+=stage1= and later on macOS, linux, windows. Why only on those three
+systems? This has primarily to do with how GHC figures out the
+location of the executable that is invoked, as it needs to know where
+its =lib= folder is. This turns out to be a rather tricky to get right
+and is rather platform dependent. /(I have not tried *BSD; but I
+believe that could work as well, if someone wants to give this a try,
+let me know! --- If you want to add support for any other platform,
+the best point to start would be to make/ =getExecutablePath= /from/
+=base:System.Environment= /behave correctly for your platform.)/
+
+Another benefit is that we do not necessarily need the wrapper scripts
+anymore. The wrappers used to wrap the binaries and add the =-B= flag or
+similar to tell the binaries where the =lib= folder was. As such you can
+just run =gdb ghc= or =lldb ghc=. /(The wrapper scripts are still generated
+when installing ghc via/ =make install= /if the/ =lib= /and/ =bin= /folders
+are /=./configure=/d to be in different locations.)/
+
+This work is by no means concluded yet but it is sufficiently advanced
+that I was able to produce a set of relocatable cross compilers for
+iOS, Android and Raspberry Pi, which you can find at
+[[http://hackage.mobilehaskell.org/][http://hackage.mobilehaskell.org]].  If you run into issues, please file
+them with the [[https://github.com/mobilehaskell/hackage-overlay/issues][mobilehaskell hackage-overlay issue tracker]].
+
+#+BEGIN_QUOTE
+  A word of caution though: as =cabal=s =new-build= has a rather
+  [[https://github.com/haskell/cabal/issues/4939][annoying bug]] with
+  respect to forwarding flags to dependencies, my advice is to unpack or
+  add submodules for dependencies that require cabal to run =hsc2hs=
+  or =./configure=.
+#+END_QUOTE
+
+#+BEGIN_QUOTE
+  I plan to get around to fixing this; but I haven't manage to do so
+  just yet.
+#+END_QUOTE
+
+I've use the aforementioned binary distributions to build a stitching
+application where the logic part (stitching together simple screenshots
+into a long continuous screenshot) is written in Haskell and the UI is
+written in kotlin for Android and obj-c (make calling haskell via c a
+bit easier than swift) for iOS, which you see below.
+
+Stitcher running on an Asus Zenfone
+Stitcher running on an iPhone 7
+I plan to write up building Stitcher as a series starting in 2018, and
+the accompanying code will be available on GitHub.
+
+** Contributing to GHC
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2017-12-21-contributing-to-ghc
+   :EXPORT_DATE: <2017-12-21>
+   :ID:       99965BE7-3ED1-4D1A-B0DE-A7F1E0618D13
+   :END:
+
+*** via Phabricator
+    :PROPERTIES:
+    :ID:       A2644290-4629-48B3-A27A-0592AE43841A
+    :END:
+
+About two weeks ago I gave a talk on “Contriubting to GHC via
+Phabricator” at the local haskell.sg Meetup. Sadly the microphone died
+after a few minutes into the recording, and as such the video has no
+audio for most of the talk and is pretty useless. As the topic might
+be of interest to those who could not attend, I'll write down the
+content of the talk as good as I can.
+
+*** Phabricator?!
+    :PROPERTIES:
+    :ID:       9CFC1522-2084-4416-B266-FCB88A48E9CA
+    :END:
+
+Let's start with what [[https://phacility.com/phabricator][Phabricator]] is, Phabricator is the code review
+tool GHC uses. It was originally developed at Facebook by Evan
+Priestley, who has since founded Phacility, Inc where the development
+of Phabricator continues.
+
+Phabricator is not just used at GHC, it is also used for other
+projects like LLVM, the Wikimedia Foundation, FreeBSD, and a many
+more.
+
+I will now try to demonstrate the usage of Phabricator for a simple
+change (with many pictures!).
+
+*** Creating an account
+    :PROPERTIES:
+    :ID:       61ACAD65-1D78-4FF3-A897-BE40382EAFF6
+    :END:
+
+#+CAPTION: When visiting
+[[https://phabricator.haskell.org,][phabricator.haskell.org]], this is the first screen you will be greeted
+with. We will proceed to open an account so we can do something
+useful.
+[[https://cdn-images-1.medium.com/max/800/1*98D8QgM96kR26RmecTu29w.png]]
+
+#+CAPTION: Upon clicking the “Log in” button you will reach the Log In
+form. While you can register a new account, I would suggest to use on
+of the available alternative account connectors.
+[[https://cdn-images-1.medium.com/max/800/1*T_Ai4I5Uu8gF4NfsVYyoEQ.png]]
+
+#+CAPTION: For this example, we'll use GitHub.
+[[https://cdn-images-1.medium.com/max/800/1*pB5drd_hMHv4ql_xtT0Tiw.png]]
+
+#+CAPTION: It will pull some username and Real Name from GitHub, but you
+will still be required to provide an email address.
+[[https://cdn-images-1.medium.com/max/800/1*hFW1W4mA4Wc8GmK7yxFZCw.png]]
+
+#+CAPTION: With the account we could not start reviewing other peoples
+code, or even submit our own code for review. So let's do this next.
+[[https://cdn-images-1.medium.com/max/800/1*5pxUAznO8MkMchBMDNBGiQ.png]]
+
+*** I have a change in my tree
+    :PROPERTIES:
+    :ID:       F82C1F36-0856-4E51-99BB-411FE1B40EEA
+    :END:
+
+Phabricator is not really concerned how your local tree looks like. It
+essentially only cares about differences. So you can go wild with your
+local branch management; use git however you like.
+
+For Phabricator try to think in patches (differences) instead of
+commits.
+
+For the following example, I've been working on cross compiler related
+issues and while doing so, I usually accumulate lots of different
+fixes in my branch.
+
+#+CAPTION: As such I now have some commit (=c93b5bbf1c= adds =-latomic=
+to =ghc-prim=) somewhere in my history, which I'd like to get into
+GHC proper.
+[[https://cdn-images-1.medium.com/max/800/1*h3D0CslstS8LVgTMh3Ynxg.png]]
+
+#+CAPTION: Let's go ahead and create a new branch from =origin/master=
+and cherry-pick the relevant commit onto it. /You could do this however
+you like. Just make sure you have a handle on the range for your patch./
+[[https://cdn-images-1.medium.com/max/800/1*SMfG0YgMzD08oTWU96TFFQ.png]]
+
+#+CAPTION: Let's ask git what the actual patch looks like.
+=git diff origin/master= should tell us. // Note the stupid white space!
+[[https://cdn-images-1.medium.com/max/800/1*YpGcEx4Ea-6zZ5bVW5kRRQ.png]]
+
+*** Enter arcanist
+    :PROPERTIES:
+    :ID:       99261012-A1C8-48B7-8AD8-4359109D6337
+    :END:
+
+Phabricator has a companion tool called =arc=anist:
+
+#+BEGIN_QUOTE
+  “arc --- arcanist, a code review and revision management utility”
+#+END_QUOTE
+
+To install it, we need to clone the following two repositories:
+
+#+BEGIN_EXAMPLE
+  $ git clone https://github.com/phacility/libphutil.git
+  $ git clone https://github.com/phacility/arcanist.git
+#+END_EXAMPLE
+
+Then add =arcanist/bin= to your =PATH=.
+
+*** Link arc with your phabricator account
+    :PROPERTIES:
+    :ID:       63FB9A46-54A2-4F72-86FB-8846399148E7
+    :END:
+
+Next we'll need to tell connect =arc= with our phabricator account on
+[[https://phabricator.haskell.org][phabricator.haskell.org]]. To do this we need to run the follwing
+command from within the ghc repository
+
+#+BEGIN_EXAMPLE
+  ghc $ arc install-certificate
+#+END_EXAMPLE
+
+#+CAPTION: =arc= will request an API Token, and tells us where we can
+get it from.
+[[https://cdn-images-1.medium.com/max/800/1*xQMFr5Lk1ledPuT5CuBFQg.png]]
+
+#+CAPTION: Navigating to the URL arcanist gave us, presents us with the
+following page. Simply copying the API Token ...
+[[https://cdn-images-1.medium.com/max/800/1*sTjPP5ViqgShSolz_ACIfQ.png]]
+
+#+CAPTION: ... and pasting it into the terminal should be enough for arc
+to properly link your haskell phabricator account with your ghc
+repository. /This needs to be done only once!/
+[[https://cdn-images-1.medium.com/max/800/1*q6vGYh9kZTTKJ6b02Dt3Ig.png]]
+
+#+CAPTION: Let's send the patch for review. I like to be explicit about
+the offset, but usually =arc= should figure out the =origin/master=
+offset on its own.
+[[https://cdn-images-1.medium.com/max/800/1*8331KRzuZkcEW-ngkJs7Jw.png]]
+
+#+CAPTION: Next we might be greeted with this. What is this?! =arc=
+wants to be helpful here and tell us that we have lots of untracked
+files in our repository. If you are sure you have committed everything
+you want to submit for review, it's safe to say =y= here.
+[[https://cdn-images-1.medium.com/max/800/1*-a0Oq5aLt3dYEnt19tFNnQ.png]]
+
+#+CAPTION: Alright, so now your =$EDITOR= will open, and you will be
+asked to fill out some metadata about your patch.
+[[https://cdn-images-1.medium.com/max/800/1*t0GBH2hEv6ULZISTxITApQ.png]]
+
+#+CAPTION: Here's an example of the filled out metadata. I've added a
+summary and added Ben Gamari as a reviewer. Let's hope he's not
+too busy!
+[[https://cdn-images-1.medium.com/max/800/1*p0CcJ2lUD7mMR0bVkB4-vQ.png]]
+
+#+CAPTION: Upon existing your editor, =arc= will run a few linters over
+the patch. And of course it found the stupid white space from
+before. It is however helpful enough to ask us if we just want to have
+this change (removal of white space) applied.
+[[https://cdn-images-1.medium.com/max/800/1*C2CYo8o_kZQRisvHOHJIMQ.png]]
+
+#+CAPTION: Removing the white space seems reasonable. So let's have
+=arc= apply the patch. Next it wants to know if we want to amend HEAD.
+And yes it makes sense to just amend this into the last commit. So
+I'll go with =y= here.
+[[https://cdn-images-1.medium.com/max/800/1*JQTE3Y6mFFaZcWpCEOfnsg.png]]
+
+#+CAPTION: Alright and we are done. =arc= has sent the patch to
+phabricator; and we got a Differential identifier back =D4253= in
+this case.
+[[https://cdn-images-1.medium.com/max/800/1*ydCaAV9fhtZQRz9unh9oew.png]]
+
+#+CAPTION: Navigating to the URL of the Differential will present us
+with this page.
+[[https://cdn-images-1.medium.com/max/800/1*-vpABfoTXiE_wKvgmWuvxQ.png]]
+
+#+CAPTION: A bit further down we'll see the summary we entered and the
+Reviewer(s) we specified.
+[[https://cdn-images-1.medium.com/max/800/1*jz_ax2o79beab05lpZ5yYQ.png]]
+
+#+CAPTION: And even further down we can see the patch we submitted.
+[[https://cdn-images-1.medium.com/max/800/1*biQ927q0mwtJv53o4oKKKg.png]]
+
+#+CAPTION: Now those lines look suspicious, why is this only for linux?
+Let's do a self-review here.
+[[https://cdn-images-1.medium.com/max/800/1*DvPak1JQsb95fE8fb_HLww.png]]
+
+#+CAPTION: After adding our comment to the line range we selected, it is
+displayed but not the gray dashed border. *It is not submitted.* /I think
+phabricator UI could be a bit better./
+[[https://cdn-images-1.medium.com/max/800/1*kovhfohaSfc3pI3ej3eDSw.png]]
+
+#+CAPTION: We still need to scroll to the bottom and hit “Submit” so
+that our remarks are actually submitted and others can see them.
+[[https://cdn-images-1.medium.com/max/800/1*WsJ8hTUgKXSU9FQNybtkAA.png]]
+
+#+CAPTION: At the top, Phabricator will now show the added comment in
+the timeline.
+[[https://cdn-images-1.medium.com/max/800/1*sJI9wCsB4ZhbicY-LbVCRg.png]]
+
+#+CAPTION: Let's go back to our source and change the patch. Adding a
+comment probably doesn't hurt and might help the next one reading
+the “code”.
+[[https://cdn-images-1.medium.com/max/800/1*zNrp6BeKAIBTL9FhKrYbRA.png]]
+
+#+CAPTION: Next, create a new commit and let's take a look at the
+new patch.
+[[https://cdn-images-1.medium.com/max/800/1*fhhx-BPsB7QsNJoz2rwEVg.png]]
+
+#+CAPTION: Here we now see the new patch. Note that not much from the
+previous patch is left, because we essentially rewrote everything. The
+second commit reversed everything from the first after all.
+[[https://cdn-images-1.medium.com/max/800/1*NWmF3B3NSw0DzDapaZvZmA.png]]
+
+#+CAPTION: Time for =arc diff origin/master= again.
+[[https://cdn-images-1.medium.com/max/800/1*bErZ_GLlYkLc3zhdAhjYQg.png]]
+
+#+CAPTION: And again we are greeted with the untracked files screen.
+[[https://cdn-images-1.medium.com/max/800/1*JYJ38fJbQXMZg4m8WjmD-Q.png]]
+
+#+CAPTION: However the =$EDITOR= now has a slightly different template
+because we are updating a differential and are not creating a new one.
+Here we can specify what we changed. By default it will pull information
+from the commit messages.
+[[https://cdn-images-1.medium.com/max/800/1*qfVPtw_GX8K9s6v-2wljPw.png]]
+
+#+CAPTION: After exiting the =$EDITOR= arc tells us it has updated the
+Differential.
+[[https://cdn-images-1.medium.com/max/800/1*QuxjIyovQ6OR1YUl-NU8cQ.png]]
+
+#+CAPTION: Looking at the timeline we see the new update item as well.
+[[https://cdn-images-1.medium.com/max/800/1*Rsu8gjPkXZn8qOE5aDGeMg.png]]
+
+#+CAPTION: Of course the patch now looks different and our new patch is
+displayed. We'll mark the comment as Done...
+[[https://cdn-images-1.medium.com/max/800/1*WaKxob5gX0EQn9J_9VwjtQ.png]]
+
+#+CAPTION: ... and again we'll need to hit Submit for this to be
+actually submitted.
+[[https://cdn-images-1.medium.com/max/800/1*evbg8FUMWZHt5_fI9rXWaw.png]]
+
+#+CAPTION: The marking of the comment as done is now also reflected in
+the timeline.
+[[https://cdn-images-1.medium.com/max/800/1*HTgouq9HsH9t1ZAxnrv9lA.png]]
+
+*** Where to go from here?
+    :PROPERTIES:
+    :ID:       546696D8-6AFB-4CE6-AB87-937D16A382DF
+    :END:
+
+Now someone will have to come and review the code, and select the
+“Accept” Action. If the code is accepted, you can run =arc land= *if you
+have commit access to GHC*/. If you do not have commit access worry
+not, someone with commit access will usually aggregate accepted diffs
+run /=./validate= /on them and if that passes push them to the GHC
+repository./
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2018-01-09-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2018-01-09>
+   :ID:       6CCF5038-211A-411F-9482-63EC9EE4B546
+   :END:
+
+*** December Edition
+    :PROPERTIES:
+    :ID:       3EC8FA3B-6992-4285-A6FA-D9155C7B051D
+    :END:
+
+In December I was finally able to provide new GHC cross compiler
+[[https://medium.com/@zw3rk/relocatable-ghc-cross-compiler-binary-distributions-f55080b837b1][binary distribution]] for iOS, Android and Raspberry Pi from macOS
+Sierra and Linux. The only other post was [[https://medium.com/@zw3rk/contributing-to-ghc-290653b63147][Contributing to GHC]] via
+phabricator. That is not to say there has been no progress, I just
+found very little time to write.
+
+Axis Sivitz has been successful in cross compiling some haskell code
+using the cross compiler, and [[https://github.com/mobilehaskell/hackage-overlay/issues/5][highlighted a few issues along the
+way]]. He also ran into an issue with the [[https://github.com/mobilehaskell/hackage-overlay/issues/6][missing adjustor support]],
+which should be rectified with a set of new cross compiler releases
+later this month.
+
+I've also talked to [[https://www.fastly.com/][fastly]] regarding their open source support
+offerings, and I'm happy to report, that downloads from
+[[http://hackage.mobilehaskell.org][hackage.mobilehaskell.org]] will soon be delivered via fastly's CDN. I
+hope this will provide everyone with a better (faster) experience!
+
+🎉 Happy New Year 🎉
+
+** Talk: Building Android apps with Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2018-01-12-talk-building-android-apps-with-haskell
+   :EXPORT_DATE: <2018-01-12>
+   :ID:       C406539A-DAC3-4BA1-ADB8-9B2F3408A05C
+   :END:
+
+*** haskell.sg Meetup --- January 2018
+    :PROPERTIES:
+    :ID:       B94C7F5E-A0D5-4733-B5D9-08C0713E04AD
+    :END:
+
+At the [[https://www.meetup.com/HASKELL-SG/events/246341959/][haskell.sg January Meetup]] I presented building Android apps
+with Haskell yesterday. As we have recordings set up for a while now,
+you can follow it below. The talk is rather short and will only
+outline how to install the cross compilers, setup an Android app and
+call Haskell from Kotlin to display “Hello from Haskell”. It should
+hopefully provide a good starting point to start playing with the
+cross compilers.
+
+The source code for the sample application can be found on [[https://github.com/angerman/2018-01-MeetupDemo][github]].
+
+** Provisioning a NixOS server from macOS
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2018-01-17-provisioning-a-nixos-server-from-macos
+   :EXPORT_DATE: <2018-01-17>
+   :ID:       E5FD1EBA-2059-4163-84C9-D91ECBF30F0A
+   :END:
+
+[[https://nixos.org/nix/][Nix]] is a /purely functional package manager/ and [[https://nixos.org/][NixOS]] is a /purely
+functional Linux distribution./ I have been running a NixOS server for
+a while now, and been quite happy with the configuration. However
+updating it has essentially been copying the =configuration.nix= file
+over and calling =nixos-rebuild switch --upgrade=. This builds packages
+that are not in the cache on the server. [[https://nixos.org/nixops/][NixOps]] is /the NixOS cloud
+deployment tool/ and I should be able to use it to provision the
+server. Specifically using NixOps on macOS seems to be rather
+uncommon. I'll detail my process, so that we all may benefit from
+using NixOps on macOS to provision a NixOS linux server.
+
+*** Motivation
+    :PROPERTIES:
+    :ID:       72604A03-984F-4795-A1A2-17E21CAF5125
+    :END:
+
+Over the last few days I've moved [[http://hackage.mobilehaskell.org][hackage.mobilehaskell.org]] over to S3
+and fastly. I've also started adding automation, so that changes
+(patches to cabal packages) in the [[http://github.com/mobilehaskell/hackage-overlay][hackage-overlay]] repository will
+automatically be reflected on [[http://hackage.mobilehaskell.org][hackage.mobilehaskell.org]]. In general I
+prefer my software to not be built on the server, but rather on some
+build machine, and then only have the final binary be deployed on the
+server. NixOps with a build slave allows for this setup.
+
+*** Setting up Nix and Nix on Darwin (macOS)
+    :PROPERTIES:
+    :ID:       E937781E-CC23-45BB-A841-4FDC2B08345E
+    :END:
+
+/Note: when ever running scripts from the internet, verify that the
+code you run is what you actually want to run!/
+
+Setting up =nix= and =nix-darwin= has become quite easy these days.
+Installing =nix= can be done with
+
+#+BEGIN_EXAMPLE
+  $ curl https://nixos.org/nix/install | sh
+#+END_EXAMPLE
+
+and installing =nix-darwin= is similarly only a shell command away
+
+#+BEGIN_EXAMPLE
+  $ bash <(curl https://raw.githubusercontent.com/LnL7/nix-darwin/master/bootstrap.sh)
+#+END_EXAMPLE
+
+If this all installed successfully, you should find =darwin-rebuild= and
+=darwin-option= in your =$PATH=.
+
+*** Setting up a docker build slave
+    :PROPERTIES:
+    :ID:       A7DA502D-63E4-4187-9A4A-83CCBEDB8348
+    :END:
+
+Now that we have nix installed, we still can't build software for our
+server, as the server runs =x86_64-linux= but we are on =x86_64-darwin=.
+Luckily there is [[https://www.docker.com/docker-mac][docker for mac]] which allows us to run Linux contains
+on macOS, and [[https://github.com/LnL7][Daiderd Jordan]] provides not only =nix-darwin= but also
+=nix-docker=.
+
+With docker for mac installed we can try out a container
+
+#+BEGIN_EXAMPLE
+  $ docker run --rm -it lnl7/nix nix-repl '<nixpkgs>'
+#+END_EXAMPLE
+
+which should drop us right into the =nix-repl= in a docker =x86_64-linux=
+container, which we can verify with
+
+#+BEGIN_EXAMPLE
+  nix-repl> system
+  "x86_64-linux"
+#+END_EXAMPLE
+
+To turn that into a build slave, we'll need to run
+
+#+BEGIN_EXAMPLE
+  $ docker run --restart always --name nix-docker -d -p 3022:22 lnl7/nix:ssh
+#+END_EXAMPLE
+
+[[https://github.com/LnL7/nix-docker#running-as-a-remote-builder][add
+the necessary ssh key]]
+
+#+BEGIN_EXAMPLE
+  $ git clone https://github.com/LnL7/nix-docker.git
+  $ mkdir -p /etc/nix
+  $ chmod 600 ssh/insecure_rsa
+  $ cp ssh/insecure_rsa /etc/nix/docker_rsa
+#+END_EXAMPLE
+
+and add the ssh configuration to =~root/.ssh/config=
+
+#+BEGIN_EXAMPLE
+  Host nix-docker
+    User root
+    HostName 127.0.0.1
+    Port 3022
+    IdentityFile /etc/nix/docker_rsa
+#+END_EXAMPLE
+
+Why do we need to add it to =root=? Because the =nix-daemon= will run the
+build as root. Now try to connect to the machine as =root=
+
+#+BEGIN_EXAMPLE
+  $ sudo ssh nix-docker
+#+END_EXAMPLE
+
+and answer yes to add the host to the list of known hosts.
+
+*** Teaching nix about the x86_64-linux build slave
+    :PROPERTIES:
+    :ID:       6CAC7B15-2CBB-46AC-88FD-8822873D3828
+    :END:
+
+At this point we have our build slave working, but nix doesn't know
+about it yet. You will need to set
+
+#+BEGIN_EXAMPLE
+  nix.distributedBuilds = true;
+  nix.buildMachines = [ {
+    hostName = "nix-docker";
+    sshUser = "root";
+    sshKey = "/etc/nix/docker_rsa";
+    systems = [ "x86_64-linux" ];
+    maxJobs = 2;
+  } ];
+#+END_EXAMPLE
+
+in your =~/.nixpkgs/darwin-configuration.nix= to tell nix about your
+build slave. You will also need
+
+#+BEGIN_EXAMPLE
+  services.nix-daemon.enable = true;
+#+END_EXAMPLE
+
+to ensure that the =nix-daemon= is launched with the proper environment
+variables (see cat =/Library/LaunchDaemons/org.nixos.nix-daemon.plist=
+after a rebuild). And run
+
+#+BEGIN_EXAMPLE
+  $ darwin-rebuild switch
+#+END_EXAMPLE
+
+*** Test: building a package for x86_64-linux
+    :PROPERTIES:
+    :ID:       9CB1EB16-3507-472A-A32D-0F253A5F91D2
+    :END:
+
+To verify the setup works we will build a slightly modified =hello= for
+=x86_64-linux= with =nix-build=
+
+#+BEGIN_EXAMPLE
+  $ nix-build -E 'with import <nixpkgs> { system = "x86_64-linux"; }; hello.overrideAttrs (drv: { rebuild = builtins.currentTime; })'
+#+END_EXAMPLE
+
+/Note:/ =--check= /won't work, as it will not respect the/ =system= /setting!/
+
+*** NixOps
+    :PROPERTIES:
+    :ID:       21809A2C-531E-4428-97C0-C7D16AAA6BF5
+    :END:
+
+Using =nixops= at this point should be rather easy. All you need to
+ensure is that your configuration contains the =nixpkgs.system =
+"x86_64-linux"= attribute.
+
+#+BEGIN_EXAMPLE
+  { webserver = { config, pkgs, lib, ... }:
+    { deployment.targetHost = "...";
+      nixpkgs.system = "x86_64-linux";
+      ...
+    };
+  }
+#+END_EXAMPLE
+
+*Note:* with /Nix 2/ this needs to be =nixpkgs.localSystem.system= instead
+of =nixpkgs.system= as [[https://medium.com/u/6e2f7c3e0744][Jezen Thomas]] kindly noted in the comments.
+
+With that set, you should be able to run =nixops deploy=
+
+#+BEGIN_EXAMPLE
+  $ nixops deploy -d myserver
+  building all machine configurations...
+  ...
+  webserver> copying closure...
+  myserver> closures copied successfully
+  webserver> activating the configuration...
+  webserver> setting up /etc...
+  ...
+  webserver> activation finished successfully
+  myserver> deployment finished successfully
+#+END_EXAMPLE
+
+and have your NixOS server successfully deployed from macOS.
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2018-02-05-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2018-02-05>
+   :ID:       3FF13908-7B75-4BF8-B164-2784A1A94C0D
+   :END:
+
+*** January Edition
+    :PROPERTIES:
+    :ID:       F2A9FA69-252B-4C44-BC88-995DA216265D
+    :END:
+
+After setting up [[http://hackage.mobilehaskell.org][hackage.mobilehaskell.org]] with S3 and fastly backing
+[[https://medium.com/@zw3rk/what-is-new-in-cross-compiling-haskell-759adaa7e1c][in December]], I automated the overlay generation in January. This means
+that any patches pushed to [[https://github.com/mobilehaskell/hackage-overlay/][the overlay repository]] will be
+automatically reflected in the overlay after a few minutes. Now all
+that's missing is patches for common packages!
+
+I've also managed to [[https://github.com/haskell/cabal/pull/5018][write a patch]] for =cabal= so that =new-build=
+properly propagates =--with-PROG= flags into dependencies. This should
+make it work much better for cross compilation, once the patch is
+merged. I'm hopeful this will happen soon.
+
+Finally I've argued for the use (and improved) overlays in the [[https://github.com/haskell/ecosystem-proposals/pull/4][SLURP]]
+and [[https://github.com/haskell/ecosystem-proposals/pull/6][Uncurated Hackage Layer]] proposals, because I believe overlays are
+an underused feature that could provide us with solutions to the
+perceived problems (as I understand them) and offer a unified
+interface.
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2018-03-02-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2018-03-02>
+   :ID:       32A7FDBE-B071-4269-9F30-597EE9D8E9C3
+   :END:
+
+*** February Edition
+    :PROPERTIES:
+    :ID:       9A1296F0-1087-4ECF-8629-A9977277AA19
+    :END:
+
+While I didn't manage to find the time to write anything here in
+February, I did make some progress on the cross compilation front.
+
+=cabal= can now be invoked outside of the source folder, and tries to
+not pollute the source tree with generated files anymore
+([[https://github.com/haskell/cabal/pull/4874][haskell/cabal#4874]]).  The =--with-PROG= flag is now properly respected
+when using =new-build=; this allows =new-build= to work with cross
+compilers ([[https://github.com/haskell/cabal/pull/5018][haskell/cabal#5018]]).  I've also spent quite some time to
+get cabals CI back into shape, which was hitting a rather obscure bug
+([[https://github.com/haskell/cabal/pull/5132][haskell/cabal#5132]]).
+
+I've also started working for [[https://iohk.io][IOHK]] where I will be assisting the
+DevOps team to Cross Compile Haskell with GHC from Linux to
+Windows. I'm very excited about the work we do at IOHK, and this will
+definitely broaden and improve GHCs cross compilation capabilities.
+
+This does not mean I'll stop working on the mobile cross compilers; I
+will still keep improving them --- as I have been --- and I think we
+are already on a very good road to get this all sorted in GHC
+8.6. While my initial target was GHC 8.4, we just couldn't get it all
+into GHC 8.4 in time.
+
+If everything works out as I hope, GHC 8.6 can be built by default
+with the shake based build system: hadrian, and will have extensive
+cross compilation capabilities to various platforms.
+
+I'd like to close with some progress we are making at IOHK with
+respect to cross compiling Haskell to Windows.
+
+#+BEGIN_QUOTE
+  [[https://twitter.com/angerman_io/status/969546657141420032][]]
+#+END_QUOTE
+
+** Talk: Case Study: Cross Compiling dhall-json
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2018-03-14-talk-case-study-cross-compiling-dhall-json
+   :EXPORT_DATE: <2018-03-14>
+   :ID:       3062EC75-5EAB-4357-A67A-F195C584D66B
+   :END:
+
+*** haskell.sg Meetup --- March 2018
+    :PROPERTIES:
+    :ID:       85AEE465-10CC-40BA-8C68-8354619E1098
+    :END:
+
+At the [[https://www.meetup.com/HASKELL-SG/events/246341985/][haskell.sg March Meetup]] I gave a short presentation on how to
+cross compile [[http://github.com/dhall-lang/dhall-json][dhall-json]] to raspberry pi, and the issues you might run
+into. I wanted to show that it is possible to cross compile
+non-trivial Haskell packages today, and that issues (ghc-head,
+=build-type=, and Template Haskell) have mostly trivial fixes of which
+most can in principle be upsteamed.
+
+The talk coincided with the release of GHC 8.4, *and* the release of a
+new =zlib= package to hackage, which renders the need to fix =zlib=
+unnecessary.
+
+Note that while this works, the fix for =contravariant= is a rather
+crude one. For a proper fix and the complete set of patches see
+[[https://github.com/ekmett/contravariant/issues/44][contravariant#44]].
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2018-05-03-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2018-05-03>
+   :ID:       73B353DB-AD05-42BD-AD31-DE44E493E9E7
+   :END:
+
+*** March & April Edition
+    :PROPERTIES:
+    :ID:       CB61F54C-3131-4BE0-95CB-C82989911B5F
+    :END:
+
+Due to some travel in April, I wasn't able to write up an update for
+what happened in March. So today we'll have a combined update for
+March and April.
+
+Alp Mestanogullari has finished [[https://github.com/snowleopard/hadrian/pull/531][hadrian#531]], which was a clean up of
+my earlier [[https://github.com/snowleopard/hadrian/pull/445][hadrian#445]]. As such we now build relocatable GHCs with
+hadrian by default! 🎉
+
+I have been making progress on the Windows front to the point where we
+don't even need a windows installation anymore, and run the iserv
+slave via WINE. More on that soon!
+
+As I've had to work a lot more with nix recently, I've come to hit the
+limitations of the current Haskell infrastructure in nix with respect
+to cross compilation. Specifically the flattening of conditionals
+(os/arch/flags) that =cabal2nix= does. This resulted in [[https://github.com/angerman/Cabal2Nix][some]] [[https://github.com/angerman/haskell.nix][new]] [[https://github.com/angerman/hackage.nix][tooling]]
+and a bit [[https://github.com/angerman/stackage.nix][more]]. This is in its early stages, and I will expand on this
+properly once it has matured a little.
+
+Finally I started looking into adding =-target= to GHC. This will
+certainly be a very long road, but I think we do have most of the
+necessary bits in place to make GHC multi-target. It will however
+require not only changes to GHC, but also to the build system, to
+build the relevant libraries in the right places, as well as to the
+tooling around.
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2018-06-06-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2018-06-06>
+   :ID:       0F41DB91-0708-4D2F-A1AC-D6DA936AA45D
+   :END:
+
+*** May Edition
+    :PROPERTIES:
+    :ID:       440DCA23-D73F-427C-92A4-895EC3F692F0
+    :END:
+
+With GHC 8.6.1 being released soon, the windows for patches was
+closing fast. While not necessarily cross compilation related, I was
+still able to get a [[https://phabricator.haskell.org/D4714][patch]] in the infamous load command size limit
+issue on macOS.
+
+Interestingly windows suffers from a similar issue. On windows we have
+a command argument size limit of 32k character from Windows 7 onwards.
+Cabals (and to that extend also Stacks, and all other tools that use
+=Setup.hs=) tendency to put libraries into their own folders results in
+one library search path per library. Thus once you have accumulated
+enough dependencies in your transitive dependency closure, you will
+see the =gcc.exe: error: CreateProcess: No such file or directory= (or
+=realgcc.exe=) errors. Now you might be wondering why? Arn't we using
+response files? And indeed we use response files to pass the arguments
+to =gcc=. However =gcc= internally does not seem to use response files for
+the library search paths when passing them off to =collect2= and as such
+fail over. Of course we can [[https://phabricator.haskell.org/D4762][hack this rather crudely]] in =ghc=, but the
+real solution is to fix =gcc=.
+
+Now on to cross compilation related news: I've spent some more time
+looking at =-target= but got nothing useful to report yet. I also
+started looking on the =llvm-ng= backend and making it ready for the
+upcoming ghc 8.6.1 release. This included mostly adapting new code gen
+paths for new primops in 8.6.1.
+
+I'm also trying to speedup the =llvm-ng= backend to be less space and
+time consuming and hope to be able to provide prebuilt cross compiler
+binaries for 8.6.1 in a timely manner around the 8.6.1 alpha/beta
+releases.
+
+Finally a shout out to [[https://obsidian.systems/][obsidian.systems]] for releasing [[https://github.com/obsidiansystems/obelisk][obelisk]]!
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2018-07-04-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2018-07-04>
+   :ID:       8F770524-E9FC-4B74-B1CB-3EB28A670DCC
+   :END:
+
+*** June Edition
+    :PROPERTIES:
+    :ID:       FF1D060B-6C7C-49CB-9B39-352667915115
+    :END:
+
+This post will be quite brief. I wasn't able to carve out much time in
+June as my wife an I have just welcomed a new human being.
+
+As the [[https://mail.haskell.org/pipermail/haskell-cafe/2018-June/129361.html][8.6.1 alpha was just announced]], I'm trying to finish adapting
+the =llvm-ng= backend as quickly as I can and build a fresh set of
+pre-built ghc 8.6.1 cross compilers.
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2018-08-14-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2018-08-14>
+   :ID:       DD768B6D-44F1-439D-BFE8-A20B3C9DF457
+   :END:
+
+*** July Edition
+    :PROPERTIES:
+    :ID:       23F403EB-1ECB-4C89-93AF-B808D393FD97
+    :END:
+
+In July I've been playing around a bit more with =-target=. At this
+point I believe the best solution is to have a minimal =ghc= that
+doesn't ship with any libraries; and all libraries are built on demand
+per target. We will likely want to pre-build and ship the Runtime
+System Library =rts= as we do not have a cabal package that would just
+build the =rts=. You'd have to specify the targets for which you want to
+build/include the =rts=. The drawback is that you'd need the (partial)
+target toolchain to build the =rts= for all the bundled =rts=s you want
+to ship.
+
+On the other side you'd likely want to use =iserv= (e.g. the
+=-fexternal-interpreter=), with which I've just recently run into some
+strange behaviour while compiling test-suites for packages, where the
+=iserv= process complains about code that is loaded multiple times. I'm
+currently exploring how we can get proper test-coverage for libraries,
+and maybe even =ghc= in a cross compiled setting.
+
+A few bugs were fixed, the =-staticlib= argument now doesn't fail if the
+object files in the archives it's trying to concatenate are of
+odd-length; GHC doesn't PANIC anymore when =-jN=, =N>1= is used and it
+fails to find/load a library.
+
+I've also updated the relevant llvmng code to work with ghc8.6. I've
+had to retract the performance improvement though; as it kept
+producing invalid binaries occasionally and I haven't found the reason
+yet. As such I'm probably going to rent some compute time on AWS or
+similar service to build the cross compiler once the final 8.6.1 hits.
+
+** What is New in Cross Compiling Haskell
+   :PROPERTIES:
+   :EXPORT_FILE_NAME: 2018-10-09-what-is-new-in-cross-compiling-haskell
+   :EXPORT_DATE: <2018-10-09>
+   :ID:       ACE3D2AB-F4A9-4339-A84C-FAA18675E8F7
+   :END:
+
+*** August & September Edition
+    :PROPERTIES:
+    :ID:       ED343485-BD3D-4834-B82C-DE079D91C113
+    :END:
+
+Due to a lot of traveling in September, I wan't able to write the
+August update in September. So what happened in the last two month?
+
+For the cross compilation pipeline through the =llvm-ng=, I've added
+binary serializability of =cmm= to a custom =ghc= fork, that allows to
+dump the =cmm= representation. This is helpful as it allows the
+decoupeling from the code generator and the ghc front end. What
+usually happens is that ghc reads a file, parses it turns it into an
+AST, desuguares it, runs a set of optimizations and finally turns it
+into STG before turning it into =cmm=. So far as =cmm= wasn't really
+binary serializable, you had to plug your code generator in GHC, and
+have the frontend run, and then call your code gen. With the
+opportunity to just dump the =cmm=, this can be completely decoupled; it
+also means we can profile the code generator (=cmm= to =object file=) in
+isolation.
+
+On the minimal ghc distribution side, I've come to the conclusion that
+=ghc= packaged with the following libraries: =rts=, =ghc=, =ghc-prim=,
+=integer-gmp=, =integer-simple=, =base=, =array=, =deepest=, =pretty=,
+=ghc-boot-th=, and =template-haskell= seems to be sufficient; this notably
+dropped =Cabal=, which means that =Cabal= needs to be bootstrapped. I'm
+not sure how I feel about that, or if I'd prefer to ship a static
+=cabal= binary alongside.
+
+I'd ideally prefer to get rid to =template-haskell= as well, however as
+that is the same package =ghc= is linked against, not shipping it and
+potentially reinstalling a different one would potentially break
+anything that depens on TH; a way around this could be to use the
+external interpreter only; in which case you could recompile the
+external interpreter against your changed TH library.
+
+On the topic of Template Haskell. The great HLint uses ={-# ANN ... #-}=
+pragmas, which cause =ghc= to enable Template Haskell for that module.
+After some discussion with Simon Marlow and Neil Mitchell, =ghc= will
+likely learn to ignore the ={-# ANN ... "HLint: ... #-}= pragmas, and
+provide an ={-# HLINT ... #-}= pragma.
+
+Finally I didn't have much time to spend on =-target=. I'd like to get
+the minimal =ghc= distribution working for that first as I believe it
+would make =-target= easier; and require to ship much less libraries.
+
+
+

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>GHC Cross Compiler Binary Distributions &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-10-20 00:00:00 &#43;0800 &#43;08">October 20, 2017</time>
+</div>
+
+		<h1 class="post-title">GHC Cross Compiler Binary Distributions</h1>
+<div class="post-line"></div>
+
+		
+
+		<p>As mentioned in the September Edition of
+<a href="https://medium.com/@zw3rk/what-is-new-in-cross-compiling-haskell-976cd4752bb9">What
+is New in Cross Compiling Haskell</a>, I&rsquo;ve been working on producing
+binary distributions of cross compilers, so that installing a cross
+compiler becomes almost as trivial as installing a GHC binary
+distribution.</p>
+<p>A word of caution is in order. /These are rather experimental builds,
+and realistically I expect there to be a few issues, that will arise.
+I&rsquo;d still appreciate early feedback so that we can iron out the wrinkles
+quickly!/</p>
+<p>I&rsquo;ve build binary distributions for from <em>macOS Sierra</em> to <em>iOS,
+Android</em> and <em>Raspberry Pi</em>, as well as binary distributions from
+<em>Debian 8</em> to <em>Android</em> and <em>Raspberry Pi</em>.</p>
+<p>So head on over to
+<a href="http://hackage.mobilehaskell.org">hackage.mobilehaskell.org</a> and grab
+the binary distribution of your choice.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>For iOS development, the iOS SDK that is shipped with Xcode is required.
+For Android you will need the Android NDK, and
+<a href="https://medium.com/@zw3rk/building-iconv-for-android-e3581a52668f">iconv
+for Android</a>. For Raspberry Pi, you will need to creat the
+<a href="https://medium.com/@zw3rk/making-a-raspbian-cross-compilation-sdk-830fe56d75ba">Raspbian
+SDK</a>.</p>
+<p>You will also need a copy of LLVM5 in <code>PATH</code>. As well as a copy of the
+bootstrapped toolchain wrapper.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">$ git clone https://github.com/zw3rk/toolchain-wrapper.git
+$ cd toolchain-wrapper
+toolchain-wrapper $ ./bootstrap
+$ export PATH=&#34;$(PWD)/toolchain-wrapper:$PATH&#34;
+</code></pre></div><p>Note: <em>you may need to adjust the</em> <code>*-toolchain.config</code> <em>file to match
+your toolchain paths.</em></p>
+<h2 id="installing-the-binary-distribution">Installing the binary distribution</h2>
+<p>While I hope that installing the binary distributions will eventually be
+as simple as =./configure &ndash;prefix=&hellip; &amp;&amp; make install= for now you will
+likely need to provide <code>--target</code>&hellip; &ndash;host=&hellip; &ndash;build=&hellip;= as well.
+E.g. for the <code>aarch64-unknown-linux-android</code> on Debian 8, you would
+provide:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">./configure --prefix=... \
+            --target=aarch64-linux-android \
+            --host=x86_64-pc-linux-gnu \
+            --build=x86_64-pc-linux-gnu
+make install
+</code></pre></div><p>to satisfy the <code>configure</code> script.</p>
+<h2 id="where-to-go-from-here">Where to go from here</h2>
+<p>You should now be able to compile a simple</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">main = putStrLn &#34;Hello World&#34;
+</code></pre></div><p>haskell file with your <code>&lt;target&gt;-ghc</code> for your target. Note that for iOS
+and Android you would likely want to use <code>-staticlib</code> to produce a
+static archive to link with your application.</p>
+<h2 id="bugs-and-issues">Bugs &amp; Issues</h2>
+<p>Please file any bug and issues you run into with the
+<a href="https://github.com/mobilehaskell/hackage-overlay/issues">hackage-overlay</a>
+issue tracker. That way we will have a central issue and knowledge base.</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2017-09-what-is-new-in-cross-compiling-haskell/" class="left arrow">&#8592;</a>
+		<a href="/posts/building-ghc-the-package-database/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-04-13 12:48:26.108069 &#43;0800 &#43;08 m=&#43;0.076669672">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

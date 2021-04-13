@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>What is New in Cross Compiling Haskell &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2018-05-03 00:00:00 &#43;0800 &#43;08">May 3, 2018</time>
+</div>
+
+		<h1 class="post-title">What is New in Cross Compiling Haskell</h1>
+<div class="post-line"></div>
+
+		
+
+		<h2 id="march-and-april-edition">March &amp; April Edition</h2>
+<p>Due to some travel in April, I wasn&rsquo;t able to write up an update for
+what happened in March. So today we&rsquo;ll have a combined update for March
+and April.</p>
+<p>Alp Mestanogullari has finished
+<a href="https://github.com/snowleopard/hadrian/pull/531">hadrian#531</a>, which
+was a clean up of my earlier
+<a href="https://github.com/snowleopard/hadrian/pull/445">hadrian#445</a>. As
+such we now build relocatable GHCs with hadrian by default! 🎉</p>
+<p>I have been making progress on the Windows front to the point where we
+don&rsquo;t even need a windows installation anymore, and run the iserv slave
+via WINE. More on that soon!</p>
+<p>As I&rsquo;ve had to work a lot more with nix recently, I&rsquo;ve come to hit the
+limitations of the current Haskell infrastructure in nix with respect to
+cross compilation. Specifically the flattening of conditionals
+(os/arch/flags) that <code>cabal2nix</code> does. This resulted in
+<a href="https://github.com/angerman/Cabal2Nix">some</a>
+<a href="https://github.com/angerman/haskell.nix">new</a>
+<a href="https://github.com/angerman/hackage.nix">tooling</a> and a bit
+<a href="https://github.com/angerman/stackage.nix">more</a>. This is in its early
+stages, and I will expand on this properly once it has matured a little.</p>
+<p>Finally I started looking into adding <code>-target</code> to GHC. This will
+certainly be a very long road, but I think we do have most of the
+necessary bits in place to make GHC multi-target. It will however
+require not only changes to GHC, but also to the build system, to build
+the relevant libraries in the right places, as well as to the tooling
+around.</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/talk-case-study-cross-compiling-dhall-json/" class="left arrow">&#8592;</a>
+		<a href="/posts/2018-05-what-is-new-in-cross-compiling-haskell/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-04-13 12:48:26.1037 &#43;0800 &#43;08 m=&#43;0.072300729">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

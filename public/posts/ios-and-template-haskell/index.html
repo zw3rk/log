@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>iOS and Template Haskell &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-06-07 00:00:00 &#43;0800 &#43;08">June 7, 2017</time>
+</div>
+
+		<h1 class="post-title">iOS and Template Haskell</h1>
+<div class="post-line"></div>
+
+		
+
+		<p>Similar to
+<a href="https://medium.com/@zw3rk/android-and-template-haskell-afb7cbf1bff7">Android
+and Template Haskell</a> we need wrap the GHCSlave (remote iserv) instance
+into an application for iOS. To provide the Template Haskell evaluation
+context on the iOS device.</p>
+<p>With the <a href="https://medium.com/p/7cc009abe208/edit">Haskell Cross
+Compiler for iOS</a> from yesterday, we will now build the GHCSlave iOS
+application.</p>
+<p>/WARNING: Due to a bug in the x86_64 linker code, Template Haskell does
+not yet work with the iOS Simulator. I have marked the commands for the
+simulator in italic, and will remove this warning, once the linker code
+is fixed. Until then Template Haskell will only work for/on the device./</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>Again we need the to
+<a href="https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914">build</a>
+<code>iserv-proxy</code>
+<a href="https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914">and
+the</a> <code>iserv</code>
+<a href="https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914">library</a>.
+<em>Please refer to the</em> <a href="http://amzn.to/2qb8k10"><em>Raspberry Pi</em></a>
+<em>instructions if something is unclear.</em></p>
+<p>After checking out the custom ghc branch:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone --recursive git://git.haskell.org/ghc.git
+cd ghc
+git remote add zw3rk https://github.com/zw3rk/ghc.git
+git fetch zw3rk
+git checkout -b zw3rk/my-ghc
+git reset --hard zw3rk/my-ghc
+git submodule update --init --recursive
+</code></pre></div><p>we need to build the <code>iserv-proxy</code> with the our regular compiler:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">ghc/iserv $ cabal install -flibrary -fproxy
+</code></pre></div><p>and the <code>iserv</code> library with the cross compilers:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">ghc/iserv $ aarch64-apple-ios-cabal install -flibrary
+ghc/iserv $ x86_64-apple-ios-cabal install -flibrary
+</code></pre></div><p>With this we now should have the <code>iserv-proxy</code> binary in <code>~/.cabal/bin</code>
+and the <code>iserv-bin</code> library for both cross compilers.</p>
+<h2 id="building-ghcslave-for-ios">Building GHCSlave for iOS</h2>
+<p>We need to build a static library and wrap it into a native iOS
+application.</p>
+<p>The code for the GHCSlave android app can be found in the
+<a href="https://github.com/zw3rk/ghc-slave">zw3rk/ghc-slave</a> repository in
+the <code>iOS</code> folder.</p>
+<p>In the same fashion as we built the
+<a href="https://medium.com/@zw3rk/a-haskell-cross-compiler-for-ios-7cc009abe208">universal
+library</a> with <code>lipo</code>, we will build a universal GHCSlave library as
+well.</p>
+<p>In the <code>GHCSlave/iOS/GHCSlave</code> folder we build the static library for
+the iOS device and simulator with <code>-threaded</code> and link in the
+<code>iserv-bin</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">aarch64-apple-ios-ghc -odir arm64 -hidir arm64 \
+  -staticlib -threaded \
+  -lffi -L/path/to/libffi/aarch64-apple-ios/lib \
+  -o hs-libs/arm64/libhs.a -package iserv-bin \
+  hs/LineBuff.hs
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">x86_64-apple-ios-ghc -odir x86_64 -hidir x86_64 \
+  -staticlib -threaded \
+  -lffi -L/path/to/libffi/x86_64-apple-ios/lib \
+  -o hs-libs/x86_64/libhs.a -package iserv-bin \
+  hs/LineBuff.hs
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">lipo -create -output hs-libs/libhs.a \
+  hs-libs/arm64/libhs.a hs-libs/x86_64/libhs.a
+</code></pre></div><p><em>Note: we need</em> <code>-threaded</code> <em>as the</em> <code>startSlave</code> <em>function call</em>
+<code>forkIO</code> <em>to start the salve in a separate thread.</em></p>
+<p>Building and running the application on a device should show:</p>
+<figure>
+    <img src="https://cdn-images-1.medium.com/max/800/1*-v9WylZoLP-X5fgB1AxKOw.png"
+         alt="Figure 1: GHCSlave running on an iOS device"/> <figcaption>
+            <p>Figure 1: GHCSlave running on an iOS device</p>
+        </figcaption>
+</figure>
+
+<h2 id="compiling-some-template-haskell">Compiling some Template Haskell</h2>
+<p>As we did when compiling
+<a href="https://medium.com/@zw3rk/android-and-template-haskell-afb7cbf1bff7">Template
+Haskell for Android</a>, we will use the <code>gitrev</code> package to embed the git
+revision in a label.</p>
+<p>The sourcecode for this sample application can be found at
+<a href="http://github.com/zw3rk/hs-ios-hello-templatehaskell">zw3rk/hs-ios-hello-templatehaskell</a>.</p>
+<p>First we will need to install the patched <code>gitrev</code> package</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone https://github.com/mobilehaskell/file-embed.git
+(cd file-embed &amp;&amp; armv7-linux-androideabi-cabal install)
+(cd file-embed &amp;&amp; aarch64-linux-android-cabal install)
+</code></pre></div><p>And similar to the
+<a href="https://github.com/zw3rk/hs-ios-helloworld">zw3rk/hs-ios-helloworld</a>
+example from
+<a href="https://medium.com/@zw3rk/a-haskell-cross-compiler-for-ios-7cc009abe208">yesterday</a>,
+we&rsquo;ll build a library with the following <code>Lib.hs</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">module Lib where
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">import Development.GitRev (gitHash)
+import Foreign.C (CString, newCString)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">foreign export ccall &#34;gitrev&#34; cgitrev :: IO CString
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">-- | turn $gitHash into a c string.
+cgitrev = newCString $gitHash
+</code></pre></div><p>compiling this into a <strong>universal library</strong> with</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">aarch64-apple-ios-ghc -odir arm64 -hidir arm64 \
+  -staticlib \
+  -L/path/to/libffi/aarch64-apple-ios/lib -lffi \
+  -o hs-libs/arm64/libhs.a -package gitrev \
+  hs/Lib.hs \
+  -fexternal-interpreter \
+  -pgmi $HOME/.cabal/bin/iserv-proxy -opti10.0.1.23 -opti5000
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">x86_64-apple-ios-ghc -odir x86_64 -hidir x86_64 \
+  -staticlib \
+  -L/path/to/libffi/x86_64-apple-ios/lib -lffi \
+  -o hs-libs/x86_64/libhs.a -package gitrev \
+  hs/Lib.hs \
+  -fexternal-interpreter \
+  -pgmi $HOME/.cabal/bin/iserv-proxy -opti10.0.1.24 -opti5000
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">lipo -create -output hs-libs/libhs.a \
+  hs-libs/arm64/libhs.a hs-libs/x86_64/libhs.a
+</code></pre></div><p>and linking it in Xcode,
+<a href="https://medium.com/@zw3rk/a-haskell-cross-compiler-for-ios-7cc009abe208">as
+we did yesterday</a>, will provide us with an application that displays
+the git hash as expected.</p>
+<figure>
+    <img src="https://cdn-images-1.medium.com/max/800/1*XkzkNHjyQ9%5Fih7VY2iA3sQ.png"
+         alt="Figure 2: Hello Template Haskell app running on iOS device"/> <figcaption>
+            <p>Figure 2: Hello Template Haskell app running on iOS device</p>
+        </figcaption>
+</figure>
+
+<p>We now have a functioning Haskell Compiler with Template Haskell support
+for iOS. <em>(Again for now without support for the simulator)</em></p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/a-haskell-cross-compiler-for-ios/" class="left arrow">&#8592;</a>
+		<a href="/posts/what-is-new-in-cross-compiling-haskell/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-04-13 12:48:26.113104 &#43;0800 &#43;08 m=&#43;0.081704726">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

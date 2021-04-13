@@ -1,0 +1,10 @@
+baseURL = "https://log.zw3rk.com/"
+languageCode = "en-us"
+title = "log.zw3rk.com"
+theme = "tale"
+
+paginate = 500
+enableRobotsTXT = true
+
+[Author]
+  name = "Moritz Angermann"

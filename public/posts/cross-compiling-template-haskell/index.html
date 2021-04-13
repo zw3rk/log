@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>Cross Compiling Template Haskell &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-05-25 00:00:00 &#43;0800 &#43;08">May 25, 2017</time>
+</div>
+
+		<h1 class="post-title">Cross Compiling Template Haskell</h1>
+<div class="post-line"></div>
+
+		
+
+		<p>As laid out yesterday, there are some interesting questions pertaining
+to
+<a href="https://medium.com/@zw3rk/template-haskell-and-cross-compilation-16b92f40c6ab">Template
+Haskell and Cross Compilation</a>. Today we will put all the pieces
+together and cross compile template haskell to our
+<a href="http://amzn.to/2qb8k10">Raspberry Pi</a> <em>with file and process IO</em>!</p>
+<h2 id="the-external-interpreter">The External Interpreter</h2>
+<p><a href="https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/ExternalInterpreter">GHCs
+External Interpreter</a> splits GHC into two components the haskell
+compiler <code>ghc</code> and the interpreter server <code>iserv</code>. Passing
+<code>-fexternal-interpreter</code> to <code>ghc</code> will spawn an <code>iserv</code> instance and run
+all interpreted code through it. <code>ghc</code> can instruct <code>iserv</code> to load and
+link libraries as needed, and evaluate bytecode objects. <code>iserv</code> in turn
+can query <code>ghc</code> for the current compilation environment during the
+evaluation.</p>
+<h2 id="splitting-iserv">Splitting iserv</h2>
+<p>For the cross compilation scenario, we need a to split <code>iserv</code> into two
+parts, an <code>iserv-proxy</code> which serves as the <code>iserv</code> interface to GHC on
+the <em>build</em> machine. And an <code>GHCSlave</code> on the <em>host</em> machine. This means
+we need to move from</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">.---------------.
+| GHC &lt;-&gt; iserv |
+&#39;---------------&#39;
+  build machine
+</code></pre></div><p>to a setup that looks more like</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">    build machine            host machine
+.-----------------------.   .------------.
+| GHC &lt;-&gt; iserv-proxy &lt;-+---+-&gt; GHCSlave |
+&#39;-----------------------&#39; ^ &#39;------------&#39;
+       ^                  |
+       |                  &#39;-- communication via sockets
+       &#39;-- communication via pipes
+</code></pre></div><p><em>Note: I will not go into the technical details of the</em> <code>iserv-proxy</code>
+<em>and</em> <code>iserv</code> <em>library to be used in the</em> <code>GHCSlave</code> <em>in this post.</em></p>
+<h2 id="building-ghc">Building GHC</h2>
+<p>In
+<a href="https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94">A
+Haskell Cross Compiler for Raspberry Pi</a> we have seen how to build a
+cross compiling GHC. As this is still work in progress and not all diffs
+have been merged, or are updated and rebased onto GHCs master branch on
+a regular basis, you will need a very recent copy (as recent as today!).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone --recursive git://git.haskell.org/ghc.git
+cd ghc
+git remote add zw3rk https://github.com/zw3rk/ghc.git
+git fetch zw3rk
+git checkout -b zw3rk/my-ghc
+git reset --hard zw3rk/my-ghc
+git submodule update --init --recursive
+</code></pre></div><p>Following the build instructions in
+<a href="https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94">A
+Haskell Cross Compiler for Raspberry Pi</a> should yield an up to date
+<code>arm-linux-gnueabihf-ghc</code>.</p>
+<p><em>Note: The hard reset is needed, as</em> <code>zw3rk/my-ghc</code> <em>is periodically
+force pushed. Please let me know of a better solution!</em></p>
+<h2 id="building-iserv">Building iserv</h2>
+<p>To build <code>iserv-proxy</code> we will use <code>ghc</code> (the GHC that builds on and for
+the build machine), as the proxy needs to be able to run on the <em>build</em>
+machine. The <code>iserv-bin</code> package, which contains the <code>iserv-proxy</code> is
+part of the ghc tree, and can be found in the <code>iserv</code> subfolder. We can
+simply build and install it by saying</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">ghc/iserv $ cabal install -flibrary -fproxy
+</code></pre></div><p>This should build and install <code>$HOME/.cabal/bin/iserv-proxy</code>.</p>
+<h2 id="building-ghcslave">Building GHCSlave</h2>
+<p>Next we need the GHCSlave to run on the Raspberry Pi. For this we need
+the <code>iserv</code> library, to link into GHCSlave. To do this we need the
+<code>arm-linux-gnueabihf-cabal</code> we created in
+<a href="https://medium.com/@zw3rk/the-haskell-cabal-and-cross-compilation-e9885fd5e2f">The
+Haskell Cabal and Cross Compilation</a>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">ghc/iserv $ arm-linux-genueabihf-cabal install -flibrary
+</code></pre></div><p>Next, we will build <code>RPi/Slave.hs</code> from the <code>ghc-slave</code> repository:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone https://github.com/zw3rk/ghc-slave.git
+cd ghc-slave/RPi
+arm-linux-gnueabihf-ghc Slave.hs
+</code></pre></div><p>This should provide the <code>Slave</code> executable for the Raspberry Pi. Because
+the <code>Slave</code> binary links against the <code>libffi</code> shared object we built
+when building the <code>arm-linux-gnueabihf-ghc</code>, we need that on the
+Raspberry Pi as well:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">scp path/to/libffi/arm-linux-gnueabihf/lib/libffi.so.7 \
+    pi@raspberrypi:
+scp Slave pi@raspberrypi:
+</code></pre></div><p>On the Raspberry Pi, we will need a temporary folder <code>$HOME/slave</code>,
+where GHCSlave store libraries and objects needed for the evaluation of
+splices.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">pi@raspberrypi:~ $ mkdir $HOME/slave
+</code></pre></div><p>With all this properly set up we can start the GHCSlave on the Raspberry
+Pi</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">pi@raspberrypi:~ $ LD_LIBRARY_PATH=$HOME ./Slave $HOME/slave 5000
+</code></pre></div><h2 id="compiling-template-haskell-via-ghcslave">Compiling Template Haskell via GHCSlave</h2>
+<p>On to the exciting part! As we now have <code>iserv-proxy</code> on the build
+machine, and <code>GHCSlave</code> on the host, we finally have a <em>fully
+functioning cross compiler with Template Haskell support!</em></p>
+<p>Let us use <a href="https://github.com/quchen">David Luposchainsky</a>
+<a href="https://github.com/quchen/articles/blob/master/useful%5Ftechniques.md#poor-mans-supercompiler">poor
+man&rsquo;s supercompiler</a> as an example.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">-- File: TH.hs
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE BangPatterns #-}
+module TH where
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">import Language.Haskell.TH.Syntax
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">-- Calculate the n-th Fibonacci number&#39;s last 10 digits in O(n).
+fibo :: Integer -&gt; Integer
+fibo = (`rem` 10^10) . fibo&#39; (0, 1)
+      where fibo&#39; (a,_) 0 = a
+            fibo&#39; (!a,!b) n = fibo&#39; (b, a + b) (n - 1)
+
+-- Wraps an Integer in(to) a Q Exp
+wrapTH :: Integer -&gt; Q Exp
+wrapTH n = [| n |]
+
+-- | Wrap a certain Fibonacci number in an expression
+fiboTH :: Integer -&gt; Q Exp
+fiboTH n = wrapTH (fibo n)
+</code></pre></div><p>and the <code>Main</code> module:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">-- File: Main.hs
+
+{-# LANGUAGE TemplateHaskell #-}
+
+import TH
+
+myFibo :: Integer
+myFibo = $( fiboTH (10^5) )
+
+main = print myFibo
+</code></pre></div><p>Compiling this should be as simple as</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">arm-linux-gnueabihf-ghc -fexternal-interpreter \
+    -pgmi $HOME/.cabal/bin/iserv-proxy \
+    -opti10.0.1.1 -opti5000 \
+    TH.hs Main.hs
+</code></pre></div><p>assuming your Raspberry Pis IP is <code>10.0.1.1</code>.</p>
+<h2 id="compiling-a-cabal-package-that-required-template-haskell">Compiling a Cabal Package that required Template Haskell</h2>
+<p>As
+<a href="https://medium.com/@zw3rk/template-haskell-and-cross-compilation-16b92f40c6ab">we
+have seen yesterday</a>, the
+<a href="https://hackage.haskell.org/package/file-embed">file-embed</a> package
+as well as the <a href="https://hackage.haskell.org/package/gitrev">gitrev</a>
+package use Template Haskell (and the file system and <code>git</code> process).
+The <a href="https://phabricator.haskell.org/D3502">initial patch</a> to enable
+file system access and process IO tried to do this transparently by
+hooking into GHCs Runtime System. This proved to be rather inelegant. A
+<a href="https://phabricator.haskell.org/D3608">revised patch</a> extends the
+Quasi class. The drawback is that packages need to be adapted to the new
+Quasi class and be more explicit about the file system and process IO to
+work with cross compilation.</p>
+<p>With some
+<a href="https://github.com/zw3rk/file-embed/commit/679b3690e1edf53986ea3af83e99115fdc32b75c">minor</a>
+<a href="https://github.com/zw3rk/gitrev/commit/958f5bf8fd5d16c22f282a96d54ad1f8ddae5240">alterations</a>
+to the file-embed and gitrev package, we can make them work with the new
+features, let&rsquo;s install them.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone https://github.com/zw3rk/file-embed.git
+(cd file-embed &amp;&amp; arm-linux-gnueabihf-cabal install)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone https://github.com/zw3rk/gitrev.git
+(cd gitrev &amp;&amp; arm-linux-gnueabihf-cabal install)
+</code></pre></div><p>So far so good. Now, let us try the
+<a href="https://github.com/zw3rk/medium/tree/master/template-haskell-and-cross-compilation">contrived
+example</a> from
+<a href="https://medium.com/@zw3rk/template-haskell-and-cross-compilation-16b92f40c6ab">yesterday</a></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone https://github.com/zw3rk/medium.git
+cd medium/template-haskell-and-cross-compilation
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text"># configure the th-example package without shared
+arm-linux-gnueabihf-cabal configure --disable-shared
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text"># build it with cabal
+arm-linux-gnueabihf-cabal build \
+   --ghc-options=&#34;-fexternal-interpreter \
+                  -pgmi $HOME/.cabal/bin/iserv-proxy \
+                  -opti10.0.1.1 -opti5000&#34;
+</code></pre></div><p><em>Note: you will need to have the the</em> <code>Slave</code> <em>process running on your
+Raspberry Pi at IP</em> =10.0.1.1=/./</p>
+<p>This will produce
+<code>dist/arm-linux-gnueabihf/build/th-example/th-example</code>. Copying it over
+to the Raspberry Pi and executing it should <em>just work</em>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">scp dist/arm-linux-gnueabihf/build/th-example/th-example \
+    pi@raspberrypi:
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">ssh pi@raspberrypi &#39;LD_LIBRARY_PATH=. ./th-example --version&#39;
+</code></pre></div><p>And yield <code>Version 32b8bbb75cf8910443397bfab6b194c8e6d36d47</code>.</p>
+<h2 id="current-limitations">Current Limitations</h2>
+<p>As we saw, packages that use file or process IO, need to be adapted to
+use the new more explicit API to work. It should also be noted that all
+this is quite new code, and not all differentials have landed in master
+yet. I am quite certain there will be bugs, however I&rsquo;d like to
+encourage you to try this out and provide feedback, PRs and bugreports!</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/template-haskell-and-cross-compilation/" class="left arrow">&#8592;</a>
+		<a href="/posts/cross-compiling-yesod-to-raspberry-pi/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-04-13 12:48:26.112827 &#43;0800 &#43;08 m=&#43;0.081427311">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>
