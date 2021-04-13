@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>GHC&#39;s Cross Compilation Pipeline &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-05-19 00:00:00 &#43;0800 &#43;08">May 19, 2017</time>
+</div>
+
+		<h1 class="post-title">GHC&#39;s Cross Compilation Pipeline</h1>
+<div class="post-line"></div>
+
+		
+
+		<p>Today is going to be a slight bit more technical, and less direct
+practical utility. We will look at the steps that GHC takes to cross
+compiles code via its LLVM backend.</p>
+<p>In
+<a href="https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/HscMain">GHC&rsquo;s
+Compiler Commentary</a> we can see how the front end takes a Haskell file
+and after <em>Parsing</em>, <em>Renaming</em>, <em>Desugaring</em>, it ends up in GHC&rsquo;s
+<a href="https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/CoreSynType">Core</a>
+language. The Core is then processed repeatedly by the <em>Simplification</em>
+pass before being translated into
+<a href="https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/StgSynType">STG</a>
+and finally
+<a href="https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/CmmType">Cmm</a>.
+Cmm is the language from which the three code generation backends in GHC
+take off.</p>
+<h2 id="the-cross-compilation-backend">The Cross Compilation Backend</h2>
+<p>The LLVM code generator takes in Cmm, and turns it into
+<a href="http://llvm.org/docs/LangRef.html">LLVM intermediate representation</a>.
+The LLVM IR is then passed through the
+<a href="http://llvm.org/docs/CommandGuide/opt.html"><em>LLVM optimizer</em></a>, the
+<a href="http://llvm.org/docs/CommandGuide/llc.html"><em>LLVM static compiler</em></a>,
+<a href="https://github.com/ghc/ghc/blob/master/compiler/llvmGen/LlvmMangler.hs"><em>GHC&rsquo;s
+LLVM Mangler</em></a>, before it is finally passed off to the <em>assembler</em>, and
+ends up as object code.</p>
+<h2 id="llvm-ir">LLVM IR</h2>
+<p>The LLVM intermediate representation can be written either in the
+textual human readable version or as
+<a href="http://llvm.org/docs/BitCodeFormat.html">LLVM Bitcode</a>. LLVM Bitcode
+is a binary format, that is represented as a stream of bits. Values in
+the Bitcode format do not necessarily need to align with byte
+boundaries.</p>
+<p>/GHC&rsquo;s LLVM code generator currently produces textual ir. As the textual
+IR is not guaranteed to be stable across LLVM releases, this is one of
+the reasons that GHC is usually tied to a specific LLVM release./</p>
+<h2 id="llvm-optimizer">LLVM optimizer</h2>
+<p>The LLVM optimizer <code>opt</code> reads in LLVM IR writes LLVM IR after
+performing a set of optimizations. The LLVM IR GHC uses GHC&rsquo;s custom
+calling convention <code>ghccc</code>, which requires the <code>-mem2reg</code> pass to be run
+by the optimizer, thus the backend always passes <code>-mem2reg</code> unless the
+<code>-O&lt;n&gt;</code> flag that is passed from GHC to the optimizer is greater than
+<code>0</code>. In which case the optimizer runs <code>-mem2reg</code> anyway.</p>
+<h2 id="llvm-static-compiler">LLVM static compiler</h2>
+<p>The LLVM static compiler <code>llc</code> turns the LLVM IR produced by the LLVM
+optimizer into assembly for the given target.</p>
+<h2 id="ghc-s-llvm-mangler">GHC&rsquo;s LLVM Mangler</h2>
+<p>After the LLVM IR GHC produces is fed through LLVM&rsquo;s optimizer and
+static compiler, the resulting assembly might need some special
+attention. Therefore GHC passes the generated assembly through the LLVM
+Mangler. The mangler currently ensures that <code>-dead_strip</code> has no effect
+on Mach-O platforms (macOS, iOS, &hellip;). Dead stripping on Mach-O
+platforms breaks GHC&rsquo;s Tables Next To Code optimization; it requires
+functions to carry prefix data. LLVM unconditionally
+inserts =.subsections_via_symbols= into the assembly. This leads the
+linker to believe that only code after <em>live</em> function symbols needs to
+be retained and it then strips away the prefix data, if the previous
+symbol is considered <em>dead.</em> <em>This should not be needed with LLVM5
+anymore! (</em><a href="https://reviews.llvm.org/D30770"><em>LLVM: D30770</em></a>/)/</p>
+<p>The mangler currently mangles two additional items: function to object
+mangling for ELF, and AVX instruction rewrites to fix AVX stack spills.
+For AVX GHC essentially lies to LLVM about the stack size being 32byte
+aligned, but then needs to rewrite the aligned AVX instructions to their
+unaligned counterparts.</p>
+<h2 id="the-assembler">The Assembler</h2>
+<p>Finally the mangled assembly is turned into =.o= object code, which is
+then handed of to the linker. On macOS <code>clang</code> is currently used as the
+assembler instead of the system assembler.</p>
+<hr>
+<p>That concludes our midlevel tour through the GHC&rsquo;s LLVM backend. <em>Please
+note that I did not discuss the optional</em> <code>Splitter=/, and optional/ =MergeForeign</code> <em>phases.</em></p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/why-use-a-cross-compiler/" class="left arrow">&#8592;</a>
+		<a href="/posts/template-haskell/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-04-13 13:01:48.437814 &#43;0800 &#43;08 m=&#43;0.075784030">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

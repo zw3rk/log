@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+	<meta name="generator" content="Hugo 0.82.0" />
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<meta name="description" content="">
+
+		<title>log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="/index.xml" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	
+
+
+	<div class="catalogue">
+		
+			<a href="https://log.zw3rk.com/posts/2018-08-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2018-10-09 00:00:00 &#43;0800 &#43;08" class="catalogue-time">October 9, 2018</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            August &amp; September Edition Due to a lot of traveling in September, I wan&rsquo;t able to write the August update in September. So what happened in the last two month?
+For the cross compilation pipeline through the llvm-ng, I&rsquo;ve added binary serializability of cmm to a custom ghc fork, that allows to dump the cmm representation. This is helpful as it allows the decoupeling from the code generator and the ghc front end.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2018-07-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2018-08-14 00:00:00 &#43;0800 &#43;08" class="catalogue-time">August 14, 2018</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            July Edition In July I&rsquo;ve been playing around a bit more with -target. At this point I believe the best solution is to have a minimal ghc that doesn&rsquo;t ship with any libraries; and all libraries are built on demand per target. We will likely want to pre-build and ship the Runtime System Library rts as we do not have a cabal package that would just build the rts. You&rsquo;d have to specify the targets for which you want to build/include the rts.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2018-06-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2018-07-04 00:00:00 &#43;0800 &#43;08" class="catalogue-time">July 4, 2018</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            June Edition This post will be quite brief. I wasn&rsquo;t able to carve out much time in June as my wife an I have just welcomed a new human being.
+As the 8.6.1 alpha was just announced, I&rsquo;m trying to finish adapting the llvm-ng backend as quickly as I can and build a fresh set of pre-built ghc 8.6.1 cross compilers.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2018-05-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2018-06-06 00:00:00 &#43;0800 &#43;08" class="catalogue-time">June 6, 2018</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            May Edition With GHC 8.6.1 being released soon, the windows for patches was closing fast. While not necessarily cross compilation related, I was still able to get a patch in the infamous load command size limit issue on macOS.
+Interestingly windows suffers from a similar issue. On windows we have a command argument size limit of 32k character from Windows 7 onwards. Cabals (and to that extend also Stacks, and all other tools that use Setup.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2018-03-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2018-05-03 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 3, 2018</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            March &amp; April Edition Due to some travel in April, I wasn&rsquo;t able to write up an update for what happened in March. So today we&rsquo;ll have a combined update for March and April.
+Alp Mestanogullari has finished hadrian#531, which was a clean up of my earlier hadrian#445. As such we now build relocatable GHCs with hadrian by default! 🎉
+I have been making progress on the Windows front to the point where we don&rsquo;t even need a windows installation anymore, and run the iserv slave via WINE.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/talk-case-study-cross-compiling-dhall-json/" class="catalogue-item">
+    <div>
+        <time datetime="2018-03-14 00:00:00 &#43;0800 &#43;08" class="catalogue-time">March 14, 2018</time>
+        <h1 class="catalogue-title">Talk: Case Study: Cross Compiling dhall-json</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            haskell.sg Meetup &mdash; March 2018 At the haskell.sg March Meetup I gave a short presentation on how to cross compile dhall-json to raspberry pi, and the issues you might run into. I wanted to show that it is possible to cross compile non-trivial Haskell packages today, and that issues (ghc-head, build-type, and Template Haskell) have mostly trivial fixes of which most can in principle be upsteamed.
+The talk coincided with the release of GHC 8.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2018-02-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2018-03-02 00:00:00 &#43;0800 &#43;08" class="catalogue-time">March 2, 2018</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            February Edition While I didn&rsquo;t manage to find the time to write anything here in February, I did make some progress on the cross compilation front.
+cabal can now be invoked outside of the source folder, and tries to not pollute the source tree with generated files anymore (haskell/cabal#4874). The --with-PROG flag is now properly respected when using new-build; this allows new-build to work with cross compilers (haskell/cabal#5018). I&rsquo;ve also spent quite some time to get cabals CI back into shape, which was hitting a rather obscure bug (haskell/cabal#5132).
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2018-01-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2018-02-05 00:00:00 &#43;0800 &#43;08" class="catalogue-time">February 5, 2018</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            January Edition After setting up hackage.mobilehaskell.org with S3 and fastly backing in December, I automated the overlay generation in January. This means that any patches pushed to the overlay repository will be automatically reflected in the overlay after a few minutes. Now all that&rsquo;s missing is patches for common packages!
+I&rsquo;ve also managed to write a patch for cabal so that new-build properly propagates --with-PROG flags into dependencies. This should make it work much better for cross compilation, once the patch is merged.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/provisioning-a-nixos-server-from-macos/" class="catalogue-item">
+    <div>
+        <time datetime="2018-01-17 00:00:00 &#43;0800 &#43;08" class="catalogue-time">January 17, 2018</time>
+        <h1 class="catalogue-title">Provisioning a NixOS server from macOS</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            Nix is a purely functional package manager and NixOS is a purely functional Linux distribution. I have been running a NixOS server for a while now, and been quite happy with the configuration. However updating it has essentially been copying the configuration.nix file over and calling nixos-rebuild switch --upgrade. This builds packages that are not in the cache on the server. NixOps is the NixOS cloud deployment tool and I should be able to use it to provision the server.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/talk-building-android-apps-with-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2018-01-12 00:00:00 &#43;0800 &#43;08" class="catalogue-time">January 12, 2018</time>
+        <h1 class="catalogue-title">Talk: Building Android apps with Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            haskell.sg Meetup &mdash; January 2018 At the haskell.sg January Meetup I presented building Android apps with Haskell yesterday. As we have recordings set up for a while now, you can follow it below. The talk is rather short and will only outline how to install the cross compilers, setup an Android app and call Haskell from Kotlin to display “Hello from Haskell”. It should hopefully provide a good starting point to start playing with the cross compilers.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2017-12-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2018-01-09 00:00:00 &#43;0800 &#43;08" class="catalogue-time">January 9, 2018</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            December Edition In December I was finally able to provide new GHC cross compiler binary distribution for iOS, Android and Raspberry Pi from macOS Sierra and Linux. The only other post was Contributing to GHC via phabricator. That is not to say there has been no progress, I just found very little time to write.
+Axis Sivitz has been successful in cross compiling some haskell code using the cross compiler, and highlighted a few issues along the way.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/contributing-to-ghc/" class="catalogue-item">
+    <div>
+        <time datetime="2017-12-21 00:00:00 &#43;0800 &#43;08" class="catalogue-time">December 21, 2017</time>
+        <h1 class="catalogue-title">Contributing to GHC</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            via Phabricator About two weeks ago I gave a talk on “Contriubting to GHC via Phabricator” at the local haskell.sg Meetup. Sadly the microphone died after a few minutes into the recording, and as such the video has no audio for most of the talk and is pretty useless. As the topic might be of interest to those who could not attend, I&rsquo;ll write down the content of the talk as good as I can.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/relocatable-ghc-cross-compiler-binary-distributions/" class="catalogue-item">
+    <div>
+        <time datetime="2017-12-20 00:00:00 &#43;0800 &#43;08" class="catalogue-time">December 20, 2017</time>
+        <h1 class="catalogue-title">Relocatable GHC Cross Compiler Binary Distributions</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            */TLDR/*/: Watch the videos at the end of this article and grab your cross compilers from/ http://hackage.mobilehaskell.org
+ It&rsquo;s been a while since the GHC Cross Compiler Binary Distributions post. A primary issue was installation. Specifically the =./configure= and make install logic that is part of GHCs binary distributions. This is necessary for GHC to install properly and setup the settings file, which contains system specific information that can only be detected on the final host.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2017-11-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2017-12-08 00:00:00 &#43;0800 &#43;08" class="catalogue-time">December 8, 2017</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            November Edition Wow, it&rsquo;s December already! So what happened last month? As I detailed in the October Edition I have been working on a hadrian fork, that should allow us to build relocatable binary distributions for GHC, and specifically for cross compilers. This work has seen quite some improvement (in hadrian and cabal), and I am now able to build relocatable binary distributions of GHC cross compilers and if there are no more obstacles, the should be ready soon.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/building-ghc-the-stages/" class="catalogue-item">
+    <div>
+        <time datetime="2017-11-22 00:00:00 &#43;0800 &#43;08" class="catalogue-time">November 22, 2017</time>
+        <h1 class="catalogue-title">Building GHC: The Stages</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            In part one we learned about the package database. Part two then introduced the tools and programs built when building GHC. In this part we will look at how the actual stages are built. I will not go into the detail of the make based build system, but try to give an overall understanding what is happening conceptually.
+To build GHC usually involves running:
+./boot (1) ./configure --prefix=/usr/opt (2) make -j (3) make install (4) Let&rsquo;s break down what is happening here: running =.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/building-ghc-the-tools/" class="catalogue-item">
+    <div>
+        <time datetime="2017-11-11 00:00:00 &#43;0800 &#43;08" class="catalogue-time">November 11, 2017</time>
+        <h1 class="catalogue-title">Building GHC: The tools</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            After getting to know package databases we are going to look into the set of tools that are used when building the Glasgow Haskell Compiler.
+alex &amp; happy alex is a tool to generate lexical analysers in Haskell, and as such can turn =.x= files into =.hs= files. happy is a parser generator, which can turn =.y= files into =.hs= files.
+ghc-pkg We saw during getting to know package databases. It is the command line interface to the package databases.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2017-10-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2017-11-11 00:00:00 &#43;0800 &#43;08" class="catalogue-time">November 11, 2017</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            October Edition After the announcement and release of experimental cross compiler previews as binary distributions last month, it turned out that binary distributions produced by the make base build system were not what I had hoped for.
+GHC 8.4.1 is around the corner (Release in February 2018. Cut release branch in November 2017.) and will come with a new shake based build system called hadrian, which has been in development for quite some time.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/building-ghc-the-package-database/" class="catalogue-item">
+    <div>
+        <time datetime="2017-10-30 00:00:00 &#43;0800 &#43;08" class="catalogue-time">October 30, 2017</time>
+        <h1 class="catalogue-title">Building GHC: The package database</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            Over the next few posts, I will explore how the Glasgow Haskell Compilers build system works. I will try not to go into too much detail how make based build system, and focus on the high level process and how to arrive at the final compiler.
+As we will have to deal with package databases, let us take a look at packages and package databases today.
+Packages While we usually build packages for use with GHC via cabal, the packages GHC knows about are those registered in the known (to GHC) package database(s).
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/ghc-cross-compiler-binary-distributions/" class="catalogue-item">
+    <div>
+        <time datetime="2017-10-20 00:00:00 &#43;0800 &#43;08" class="catalogue-time">October 20, 2017</time>
+        <h1 class="catalogue-title">GHC Cross Compiler Binary Distributions</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            As mentioned in the September Edition of What is New in Cross Compiling Haskell, I&rsquo;ve been working on producing binary distributions of cross compilers, so that installing a cross compiler becomes almost as trivial as installing a GHC binary distribution.
+A word of caution is in order. /These are rather experimental builds, and realistically I expect there to be a few issues, that will arise. I&rsquo;d still appreciate early feedback so that we can iron out the wrinkles quickly!
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2017-09-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2017-10-08 00:00:00 &#43;0800 &#43;08" class="catalogue-time">October 8, 2017</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            September Edition ICFP was a blast, and I think we made quite some progress in getting some of the cross compilation diffs merged. Facetime does pay off!
+The Q monad extension for template haskell (D3608) will need some adjustments going forward. I hope these will be sorted out by the end of October.
+Herbert Valerio Riedel announced the head.hackage hackage overlay. This allows to have a set of patches which are turned into a separete hackage repository, and the packages are picked from that repository rather than from the upstream hackage repository if a patched package exists.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2017-08-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2017-09-05 00:00:00 &#43;0800 &#43;08" class="catalogue-time">September 5, 2017</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            August Edition The little time I manged to carve out for this project in August has been spent on building a new llvm backend. Or more precisely to start integrating the llvm bitcode backend I worked on last year into ghc.
+The current status of the -fllvmng backend is that it can compile GHC, but fails to validate. I believe most of these validation failures should be fairly trivial so solve.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2017-07-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2017-08-03 00:00:00 &#43;0800 &#43;08" class="catalogue-time">August 3, 2017</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            July Edition Sadly I wasn&rsquo;t able to write anything throughout July. I hope I will be able to carve out some time this month to write about the new features we have been working on.
+The focus has mainly been on making the compilation experience for cross compilers as pleasant as possible and figuring out how to build binary distributions of GHC cross compilers.
+One of the rather annoying kludges has been the need for the libtool-lite script on some platforms; this should be unnecessary soon.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2017-07-06 00:00:00 &#43;0800 &#43;08" class="catalogue-time">July 6, 2017</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            June Edition After building the cross compilers Raspberry Pi and Android in May, June was only about iOS, as I&rsquo;ve been traveling quite a bit in June.
+Building a Cross Compiler for iOS  A Haskell Cross Compiler for iOS iOS and Template Haskell  I hope you enjoyed the posts and are excited for more! As always you can follow us here on medium, on github, or on twitter.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/ios-and-template-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2017-06-07 00:00:00 &#43;0800 &#43;08" class="catalogue-time">June 7, 2017</time>
+        <h1 class="catalogue-title">iOS and Template Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            Similar to Android and Template Haskell we need wrap the GHCSlave (remote iserv) instance into an application for iOS. To provide the Template Haskell evaluation context on the iOS device.
+With the Haskell Cross Compiler for iOS from yesterday, we will now build the GHCSlave iOS application.
+/WARNING: Due to a bug in the x86_64 linker code, Template Haskell does not yet work with the iOS Simulator. I have marked the commands for the simulator in italic, and will remove this warning, once the linker code is fixed.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/a-haskell-cross-compiler-for-ios/" class="catalogue-item">
+    <div>
+        <time datetime="2017-06-06 00:00:00 &#43;0800 &#43;08" class="catalogue-time">June 6, 2017</time>
+        <h1 class="catalogue-title">A Haskell Cross Compiler for iOS</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            So far we have built a Haskell Cross Compiler for Raspberry Pi, as well as a Haskell Cross Compiler for Android. To round this off, we will build a cross compiler for iOS as well.
+With the WWDC signaling the end of 32bit devices and the last 32bit devices are the iPad (4th gen) and iPhone 5/iPhone 5C, we will only build the 64bit cross compiler. Note that what Apple calls arm64 is called aarch64 elsewhere.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2017-05-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2017-06-02 00:00:00 &#43;0800 &#43;08" class="catalogue-time">June 2, 2017</time>
+        <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            May Edition After the initial Cross Compilation Survey in April, and the results, we tried to highlight some of the progress obsidian.systems and zw3rk made.
+Building a Cross Compiler for Raspberry Pi  Quick Headless Raspberry Pi Setup Making a Raspbian Cross Compilation SDK A Haskell Cross Compiler for Raspberry Pi  Cross Compiling Haskell Code  Why use a Cross Compiler? GHC&rsquo;s Cross Compilation Pipeline The Haskell Cabal and Cross Compilation  Discussing Template Haskell  Template Haskell Template Haskell and Cross Compilation Cross Compiling Yesod to Raspberry Pi  Building a Cross Compiler for Android  Building iconv for Android A Haskell Cross Compiler for Android Android and Template Haskell  This should give a glimpse in what is hopefully to come with GHC 8.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/android-and-template-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-31 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 31, 2017</time>
+        <h1 class="catalogue-title">Android and Template Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            With the Haskell Cross Compiler for Android we built yesterday, and the knowledge how to Cross Compiling Template Haskell, today we will build the slave process to run on the Android device to allow to us the use of Template Haskell in Android applications.
+Prerequisites As we did for the Raspberry Pi, we need to build iserv-proxy and the iserv library. Please refer to the instructions there if something is unclear.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/a-haskell-cross-compiler-for-android/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-30 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 30, 2017</time>
+        <h1 class="catalogue-title">A Haskell Cross Compiler for Android</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            Over the last two weeks we saw how to build a Haskell Cross Compiler for Raspberry Pi, set up Cabal for Cross Compilation, and how to Cross Compile Template Haskell. Building a Haskell cross compiler for Android is almost identical, with only minor differences.
+For the Raspbian Haskell cross compiler we had a single architecture only. Android runs on a plethora of architectures. We will focus on arm processors, specifically the 32bit armv7 and 64bit aarch64.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/cross-compiling-yesod-to-raspberry-pi/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-27 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 27, 2017</time>
+        <h1 class="catalogue-title">Cross Compiling Yesod to Raspberry Pi</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            As we have seen we can now cross compile Template Haskell. The Yesod Web Framework is one of many haskell web frameworks. By default it makes use of shakespeare templates, which happen to use Template Haskell.
+This is supposed to be a case study of cross compiling haskell packages to the Raspberry Pi. We will study the issues that can arise with this rather recent development and how to mitigate them.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/cross-compiling-template-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-25 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 25, 2017</time>
+        <h1 class="catalogue-title">Cross Compiling Template Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            As laid out yesterday, there are some interesting questions pertaining to Template Haskell and Cross Compilation. Today we will put all the pieces together and cross compile template haskell to our Raspberry Pi with file and process IO!
+The External Interpreter GHCs External Interpreter splits GHC into two components the haskell compiler ghc and the interpreter server iserv. Passing -fexternal-interpreter to ghc will spawn an iserv instance and run all interpreted code through it.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/template-haskell-and-cross-compilation/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-24 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 24, 2017</time>
+        <h1 class="catalogue-title">Template Haskell and Cross Compilation</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            Over the last two weeks we have seen how to build a Haskell cross compiler for the Raspberry Pi. We have also seen a high level overview of Template Haskell. Today we will look at what Template Haskell means in the context of cross compilation.
+As pointed out yesterday, Template Haskell requires that GHC is able to run the object code for the Template Haskell function. This in turn requires GHC to be able to load this code into memory and make it executable.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/template-haskell/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-23 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 23, 2017</time>
+        <h1 class="catalogue-title">Template Haskell</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            After using Haskell for a while, running into Template Haskell become more and more likely. A reverse dependency lookup for template-haskell lists over one thousand packages.
+While I believe many have used Template Haskell via aeson, language-c-inline, lens, wreq, yesod, or any of the other packages, my gut feeling is that fewer have actually written Template Haskell code.
+/This post is not intended to advocate the use of Template Haskell, but rather to foster a better understanding for what it is, and how it can be used.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/ghcs-cross-compilation-pipeline/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-19 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 19, 2017</time>
+        <h1 class="catalogue-title">GHC&#39;s Cross Compilation Pipeline</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            Today is going to be a slight bit more technical, and less direct practical utility. We will look at the steps that GHC takes to cross compiles code via its LLVM backend.
+In GHC&rsquo;s Compiler Commentary we can see how the front end takes a Haskell file and after Parsing, Renaming, Desugaring, it ends up in GHC&rsquo;s Core language. The Core is then processed repeatedly by the Simplification pass before being translated into STG and finally Cmm.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/why-use-a-cross-compiler/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-18 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 18, 2017</time>
+        <h1 class="catalogue-title">Why use a Cross Compiler?</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            Since obsidian.systems and zw3rk posted the Cross Compilation survey (and results), I have been writing about cross compiling to Raspberry Pi, and specifically building a SDK for Raspbian Jessie, and a Haskell cross compiler, one topic has been coming up repeatedly: Why use a Cross Compiler?
+For those who work in the mobile application space, cross compilation is very likely an essential part of their day. iOS and Android apps are naturally cross compiled, even though this fact is mostly hidden away.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/the-haskell-cabal-and-cross-compilation/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-17 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 17, 2017</time>
+        <h1 class="catalogue-title">The Haskell Cabal and Cross Compilation</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            Once you want to tap into the vast ecosystem of haskell libraries, you will run into cabal and hackage in one way or the other (stack and stackage build upon cabal as well). Over the last few days we set up the Raspberry Pi, built the Raspbian SDK and the Haskell cross compiler. Today we will look at what cabal is, and how to use it for cross compilation.
+Cabal, cabal-install, cabal and Hackage The *C*ommon *A*rchitecture for *B*uilding *A*pplications and *L*ibraries consists of Cabal the library.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/a-haskell-cross-compiler-for-raspberry-pi/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-16 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 16, 2017</time>
+        <h1 class="catalogue-title">A Haskell Cross Compiler for Raspberry Pi</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            After setting up our Raspberry Pi and building the raspbian SDK. Today we will build a Haskell cross compiler (GHC) for the Raspberry Pi, to be used together with the SDK.
+We will use a custom GHC branch, as not all necessary patches have yet landed yet in the upstream repository. Alternatively you can use the official GHC master branch and apply the patches manually with arc patch.
+Prerequisites Make sure you have a ghc and cabal installed.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/making-a-raspbian-cross-compilation-sdk/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-11 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 11, 2017</time>
+        <h1 class="catalogue-title">Making a Raspbian Cross Compilation SDK</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            After setting up your Raspberry Pi with Raspbian jessie lite, this time we will now create the necessary cross compilation Software Development Kit (SDK). The SDK will contain the toolchain, headers and libraries to compile binaries compatible with the Raspberry Pi on a different (more powerful) machine (e.g. your laptop or desktop computer).
+While the Raspberry Pi 2 and Raspberry Pi 3 are armv7 and aarch64 the old Raspberry Pi 1 and Raspberry Zero are armv6; to simplify matters Raspbian is compiled for armv6hf+vfpv2 to have a single distribution supporting all.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/quick-headless-raspberry-pi-setup/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-10 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 10, 2017</time>
+        <h1 class="catalogue-title">Quick Headless Raspberry Pi Setup</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            To run any software on your Raspberry Pi, it clearly needs to be set up. However, without an HDMI capable device or a USB keyboard we won&rsquo;t get anywhere without a headless setup. You will need a DHCP capable router, a Raspberry Pi, a SD card, and a SD card reader/writer (if you computer doesn&rsquo;t already provide one).
+We&rsquo;ll use Raspbian jessie lite and etcher. Putting Raspbian onto the SD card should present no issues.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/cross-compilation-survey-results/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-09 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 9, 2017</time>
+        <h1 class="catalogue-title">Cross Compilation Survey Results</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            About two weeks ago together with obsidian.systems, we asked about cross compiling haskell and 229 people responded to our survey.
+The majority (85%) noted that they would like to use GHC as a cross compiler but do not yet. The targets for cross compilation are arm (66%), aarch64 (64%) and x86_64 (42%) for android (62%), linux (60%) and iOS (43%).
+Build architecture is almost exclusively x86_64 (98%), with linux (82%) being twice as popular as macOS (38%), and windows a third at (16%).
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/building-iconv-for-android/" class="catalogue-item">
+    <div>
+        <time datetime="2017-05-03 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 3, 2017</time>
+        <h1 class="catalogue-title">Building iconv for Android</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            iconv (i*nternational *con*version) is provided by libiconv, and available through *GHC.IO.Encoding in the base package.
+As this is an external dependency, it needs to be available for a build of GHC to succeed. In the case of cross compiling GHC for iOS, we can use the libiconv.dylib provided by the iOS sdk. For android however, we&rsquo;ll need to build libiconv.so.
+Building libiconv version 1.15 for aarch64/android on macOS via androids ndk toolchain can be done as follows:
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/hello-world-a-cross-compilation-survey/" class="catalogue-item">
+    <div>
+        <time datetime="2017-04-20 00:00:00 &#43;0800 &#43;08" class="catalogue-time">April 20, 2017</time>
+        <h1 class="catalogue-title">Hello World &amp; A Cross Compilation Survey</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            we are zw3rk, the haskell focused team at lichtzwerge.com. Our mission is to make haskell a viable platform for mobile development.
+What does zw3rk stand for you might ask? It&rsquo;s a simple play on words, combining the German word Zwerg (engl. dwarf/gnome) and Werk (engl. factory) with the almighty three!
+The current state of ghc for mobile development (Android and iOS) via cross compilation is not as smooth as we&rsquo;d like.
+        </p>
+    </div>
+</a>
+
+		
+	</div>
+
+	<div class="pagination">
+		
+		
+
+		<span>1</span>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-04-13 13:01:48.458319 &#43;0800 &#43;08 m=&#43;0.096288511">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

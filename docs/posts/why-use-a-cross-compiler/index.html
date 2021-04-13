@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>Why use a Cross Compiler? &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-05-18 00:00:00 &#43;0800 &#43;08">May 18, 2017</time>
+</div>
+
+		<h1 class="post-title">Why use a Cross Compiler?</h1>
+<div class="post-line"></div>
+
+		
+
+		<p>Since <a href="https://obsidian.systems">obsidian.systems</a> and
+<a href="https://zw3rk.com">zw3rk</a> posted the
+<a href="https://medium.com/@zw3rk/hello-world-a-cross-compilation-survey-890cb95029d7">Cross
+Compilation survey</a> (and
+<a href="https://medium.com/@zw3rk/cross-compilation-survey-results-3988ad1b677b">results</a>),
+I have been writing about cross compiling to
+<a href="http://amzn.to/2re1GLQ">Raspberry Pi</a>, and specifically
+<a href="https://medium.com/@zw3rk/making-a-raspbian-cross-compilation-sdk-830fe56d75ba">building
+a SDK for Raspbian Jessie</a>, and a
+<a href="https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94">Haskell
+cross compiler</a>, one topic has been coming up repeatedly: <em>Why use a
+Cross Compiler?</em></p>
+<p>For those who work in the mobile application space, cross compilation is
+very likely an essential part of their day. iOS and Android apps are
+naturally cross compiled, even though this fact is mostly hidden away.
+In both cases the application is developed on a much more powerful
+machine than the one it is finally deployed to (or tested on).</p>
+<h2 id="power-differences">Power Differences</h2>
+<p>This leads us to the first reason for using a cross compiler. If the
+machine that <em>builds</em> the software is much more powerful than the one
+that finally <em>hosts</em> and runs the software, it make economical sense to
+use the more powerful machine to do the compilation.</p>
+<h2 id="resource-constraints">Resource Constraints</h2>
+<p>Another reason to use a cross compiler is the fact that the <em>target</em>
+that is finally <em>hosting</em> the software might be ressource constraint in
+a way that prohibits or severely hinders the execution of the compiler.
+While the ressources are perfectly fine for running the compiled
+software, they might not be adequate to run the compiler.</p>
+<h2 id="environmental-restrictions">Environmental Restrictions</h2>
+<p>A third reason for using a cross compiler could stem from the
+restrictions put onto the environment that governs the <em>target</em>. If the
+<em>target</em> simply does not admit to running the compiler or necessary
+toolchain to compile the software, the software must be compiled on a
+different <em>build</em> machine.</p>
+<hr>
+<p>Alternatives to cross compilation include building in an emulated
+environment that is sufficiently close to the <em>target</em>. The <em>build
+environment</em> is then identical or sufficiently similar to the <em>host
+environment</em>. If the compiler in question does not support cross
+compilation this might be the only option.</p>
+<p>Finally with cross compilation the compiler now has to deal with two
+different machines. The <em>build</em> machine on which the cross compiler can
+run, but the software built by the cross compiler can not run on. And
+the <em>host</em> machine on which the built software can run, but the cross
+compiler can not. We will learn more about the challenges this presents
+for a Haskell cross compiler, and especially for Template Haskell next
+week.</p>
+<p>Should you use a cross compiler or not? I don&rsquo;t believe there is a
+general answer to this. It all comes down to the constraints as
+mentioned above; the feasibility and complexity of setting up (or
+obtaining) the SDK, the toolchain, and the compiler compared to setting
+up a virtual (or emulated) sufficiently similar environment to run a
+regular compiler in.</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/the-haskell-cabal-and-cross-compilation/" class="left arrow">&#8592;</a>
+		<a href="/posts/ghcs-cross-compilation-pipeline/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-04-13 13:01:48.44317 &#43;0800 &#43;08 m=&#43;0.081140068">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

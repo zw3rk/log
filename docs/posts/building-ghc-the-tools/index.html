@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>Building GHC: The tools &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-11-11 00:00:00 &#43;0800 &#43;08">November 11, 2017</time>
+</div>
+
+		<h1 class="post-title">Building GHC: The tools</h1>
+<div class="post-line"></div>
+
+		
+
+		<p>After
+<a href="https://medium.com/@zw3rk/building-ghc-the-package-database-50c37cf6ce33">getting
+to know package databases</a> we are going to look into the set of tools
+that are used when building the Glasgow Haskell Compiler.</p>
+<h2 id="alex-and-happy">alex &amp; happy</h2>
+<p><a href="https://www.haskell.org/alex/doc/html/index.html">alex</a> is a tool to
+generate lexical analysers in Haskell, and as such can turn =.x= files
+into =.hs= files.
+<a href="https://www.haskell.org/happy/doc/html/index.html">happy</a> is a parser
+generator, which can turn =.y= files into =.hs= files.</p>
+<h2 id="ghc-pkg">ghc-pkg</h2>
+<p>We saw during
+<a href="https://medium.com/@zw3rk/building-ghc-the-package-database-50c37cf6ce33">getting
+to know package databases</a>. It is the command line interface to the
+package databases.</p>
+<h2 id="ghc-cabal">ghc-cabal</h2>
+<p>While cabal comes with the <code>Cabal</code> library and the <code>cabal</code> command line
+tool in the <code>cabal-install</code> package. The build system needs an easy way
+to just extract values from =.cabal= files and add some customizations
+to configuring, copying, and registering packages via cabal. This is
+what <code>ghc-cabal</code> is for. It produces the <code>package-data.mk</code> file, which
+is a Makefile that contains information from the =.cabal= file, such as
+it&rsquo;s Haskell Sources, C Sources, &hellip; and as such provides the Make based
+build system with sufficient information to build all the libraries.
+<em>Yes, we do</em> <strong><em>not</em></strong> <em>use</em> <code>cabal</code> <em>to build GHC.</em></p>
+<h2 id="deriveconstants">deriveConstants</h2>
+<p>This utility is used during the build process to generate header files
+containing constant values (word sizes, &hellip;) of the target platform and
+when the compiler is built those are included to provide those target
+specific information.</p>
+<h2 id="hsc2hs">hsc2hs</h2>
+<p>When binding to C libraries, the process can be quite tedious and
+<code>hsc2hs</code> tries to make this a bit easier. It is also used quite a lot
+outside of GHC itself. It even has its own
+<a href="http://downloads.haskell.org/~ghc/master/users-guide/utils.html#writing-haskell-interfaces-to-c-code-hsc2hs">GHC
+User&rsquo;s Guide entry</a>.</p>
+<h2 id="genapply-and-genprimopcode">genapply &amp; genprimopcode</h2>
+<p>GHCs runtime system needs to apply functions of various arities when
+evaluating a program. <code>genapply</code> produces the <code>AutoApply.cmm</code> file which
+is part of the <code>rts</code> package. The <code>AutoApply.cmm</code> file defines the
+standard closures used to represent application of functions of various
+artities.</p>
+<p>Functions that can not be implement in Haskell directly are called
+Primitive Operations (PrimOps) while these functions are provided
+natively by GHC, the <code>genprimopcode</code> utility uses a highlevel
+description of the PrimOps in the <code>compiler/prelude/primops.txt.pp</code> and
+produces the necessary plumbing around them: header files, curried
+wrappers, haddock information.</p>
+<h2 id="touchy">touchy</h2>
+<p>While unix systems have the <code>touch</code> command. Windows does not. As GHC
+uses <code>touch</code> during building and compilation of Haskell files, <code>touchy</code>
+is required on Windows as a substitute.</p>
+<h2 id="unlit">unlit</h2>
+<p>As GHC has support for Literate Haskell, it needs to be able to extract
+the Haskell source from a =.lhs= source file. <code>unlit</code> is the filter that
+can stirp the literate part out of a =.lhs= file and just leave
+the =.hs= part.</p>
+<hr>
+<h2 id="comparesizes">compareSizes</h2>
+<p>When comparing two ghc builds, it can be of interest to see whether or
+not the file size of haskell interface files (<code>.hi</code>) or objects (<code>.o</code>)
+has increased or decreased. As such the compareSizes utility is not
+essential to build GHC, but useful when trying to gauge what effect a
+change has on interface and object file sizes.</p>
+<h2 id="hp2ps">hp2ps</h2>
+<p>The <code>hp2ps</code> tool is also widely used. It turns a heap profile generated
+by GHC into a (hopefully) easier to undertand graphical representation.</p>
+<h2 id="ghctags">ghctags</h2>
+<p><code>vim</code> and <code>emacs</code> can read so called <code>TAGS</code> files, which provide an
+index to source-code definitions of function, variables, and other
+points of interest.</p>
+<p><code>ghctags</code> is capable of generating such a file for Haskell sources. As
+such it is also a not an essential utility to <em>build</em> GHC.</p>
+<h2 id="hpc">hpc</h2>
+<p>The <code>hpc</code> tool can be used to generate code coverage reports for Haskell
+code. It even has it&rsquo;s own
+<a href="https://wiki.haskell.org/Haskell%5Fprogram%5Fcoverage">page on the haskell
+wiki</a>.</p>
+<hr>
+<p>In conclusion I hope this was somewhat informative. And while not all
+tools are strictly used to <em>build</em> GHC. I believe this covers all the
+utilities that are part of the GHC source tree.</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2017-10-what-is-new-in-cross-compiling-haskell/" class="left arrow">&#8592;</a>
+		<a href="/posts/building-ghc-the-stages/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-04-13 13:01:48.43894 &#43;0800 &#43;08 m=&#43;0.076909665">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

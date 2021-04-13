@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>What is New in Cross Compiling Haskell &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-10-08 00:00:00 &#43;0800 &#43;08">October 8, 2017</time>
+</div>
+
+		<h1 class="post-title">What is New in Cross Compiling Haskell</h1>
+<div class="post-line"></div>
+
+		
+
+		<h2 id="september-edition">September Edition</h2>
+<p>ICFP was a blast, and I think we made quite some progress in getting
+some of the cross compilation diffs merged. Facetime does pay off!</p>
+<p>The Q monad extension for template haskell
+(<a href="https://phabricator.haskell.org/D3608">D3608</a>) will need some
+adjustments going forward. I hope these will be sorted out by the end of
+October.</p>
+<p>Herbert Valerio Riedel
+<a href="https://mail.haskell.org/pipermail/ghc-devs/2017-September/014682.html">announced
+the head.hackage hackage overlay</a>. This allows to have a set of patches
+which are turned into a separete hackage repository, and the packages
+are picked from that repository rather than from the upstream hackage
+repository if a patched package exists. This is somewhat similar to how
+<a href="https://eta-lang.org">Eta</a>&rsquo;s Etlas works. Though as far as I
+understand, Etlas does the patching on the client side, whereas the
+hackage overlay approach patches the packages on the server side and
+provides a separte hackage repository, which takes preceedence over the
+upstream hackage repository.</p>
+<p>As such I&rsquo;ve asked Herbert to give me a jump start on builing hackage
+overlays and now
+<a href="http://hackage.mobilehaskell.org">hackage.mobilehaskell.org</a> is live.
+It contains so far only a single patched package, namely <code>zlib</code>. The
+patch works around a cross compilation complication with <code>hsc2hs</code>. The
+patches can be found in the
+<a href="https://github.com/mobilehaskell/hackage-overlay">mobilehaskell/hackage-overlay</a>
+github repository.</p>
+<p><a href="http://hackage.mobilehaskell.org">hackage.mobilehaskell.org</a> also
+contains a highly experimental preview of ghc binary distributions with
+iOS, Android and Raspberry Pi cross compilers for macOS Sierra, as well
+as Android and Raspberry Pi cross compilers for Linux (debian 8) built
+with the <code>llvmng</code> llvm backend.</p>
+<p>I hope to write some more about the <code>llvmng</code> backend, the hackage
+overlay, as well as the binary distributions throughout October.</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2017-08-what-is-new-in-cross-compiling-haskell/" class="left arrow">&#8592;</a>
+		<a href="/posts/ghc-cross-compiler-binary-distributions/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-04-13 13:01:48.434258 &#43;0800 &#43;08 m=&#43;0.072227311">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

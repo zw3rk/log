@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>What is New in Cross Compiling Haskell &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2018-06-06 00:00:00 &#43;0800 &#43;08">June 6, 2018</time>
+</div>
+
+		<h1 class="post-title">What is New in Cross Compiling Haskell</h1>
+<div class="post-line"></div>
+
+		
+
+		<h2 id="may-edition">May Edition</h2>
+<p>With GHC 8.6.1 being released soon, the windows for patches was closing
+fast. While not necessarily cross compilation related, I was still able
+to get a <a href="https://phabricator.haskell.org/D4714">patch</a> in the
+infamous load command size limit issue on macOS.</p>
+<p>Interestingly windows suffers from a similar issue. On windows we have a
+command argument size limit of 32k character from Windows 7 onwards.
+Cabals (and to that extend also Stacks, and all other tools that use
+<code>Setup.hs</code>) tendency to put libraries into their own folders results in
+one library search path per library. Thus once you have accumulated
+enough dependencies in your transitive dependency closure, you will see
+the <code>gcc.exe: error: CreateProcess: No such file or directory</code> (or
+<code>realgcc.exe</code>) errors. Now you might be wondering why? Arn&rsquo;t we using
+response files? And indeed we use response files to pass the arguments
+to <code>gcc</code>. However <code>gcc</code> internally does not seem to use response files
+for the library search paths when passing them off to <code>collect2</code> and as
+such fail over. Of course we can
+<a href="https://phabricator.haskell.org/D4762">hack this rather crudely</a> in
+<code>ghc</code>, but the real solution is to fix <code>gcc</code>.</p>
+<p>Now on to cross compilation related news: I&rsquo;ve spent some more time
+looking at <code>-target</code> but got nothing useful to report yet. I also
+started looking on the <code>llvm-ng</code> backend and making it ready for the
+upcoming ghc 8.6.1 release. This included mostly adapting new code gen
+paths for new primops in 8.6.1.</p>
+<p>I&rsquo;m also trying to speedup the <code>llvm-ng</code> backend to be less space and
+time consuming and hope to be able to provide prebuilt cross compiler
+binaries for 8.6.1 in a timely manner around the 8.6.1 alpha/beta
+releases.</p>
+<p>Finally a shout out to <a href="https://obsidian.systems/">obsidian.systems</a>
+for releasing <a href="https://github.com/obsidiansystems/obelisk">obelisk</a>!</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2018-03-what-is-new-in-cross-compiling-haskell/" class="left arrow">&#8592;</a>
+		<a href="/posts/2018-06-what-is-new-in-cross-compiling-haskell/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-04-13 13:01:48.434258 &#43;0800 &#43;08 m=&#43;0.072227806">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

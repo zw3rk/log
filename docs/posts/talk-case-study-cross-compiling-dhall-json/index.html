@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>Talk: Case Study: Cross Compiling dhall-json &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2018-03-14 00:00:00 &#43;0800 &#43;08">March 14, 2018</time>
+</div>
+
+		<h1 class="post-title">Talk: Case Study: Cross Compiling dhall-json</h1>
+<div class="post-line"></div>
+
+		
+
+		<h2 id="haskell-dot-sg-meetup-march-2018">haskell.sg Meetup &mdash; March 2018</h2>
+<p>At the <a href="https://www.meetup.com/HASKELL-SG/events/246341985/">haskell.sg
+March Meetup</a> I gave a short presentation on how to cross compile
+<a href="http://github.com/dhall-lang/dhall-json">dhall-json</a> to raspberry pi,
+and the issues you might run into. I wanted to show that it is possible
+to cross compile non-trivial Haskell packages today, and that issues
+(ghc-head, <code>build-type</code>, and Template Haskell) have mostly trivial fixes
+of which most can in principle be upsteamed.</p>
+<p>The talk coincided with the release of GHC 8.4, <strong>and</strong> the release of a
+new <code>zlib</code> package to hackage, which renders the need to fix <code>zlib</code>
+unnecessary.</p>
+<p>Note that while this works, the fix for <code>contravariant</code> is a rather
+crude one. For a proper fix and the complete set of patches see
+<a href="https://github.com/ekmett/contravariant/issues/44">contravariant#44</a>.</p>
+<hr>
+<p><em>If you like what you read and want to support further work like this,
+feel free to support me via</em>
+<a href="https://www.patreon.com/zw3rk"><em>patreon</em></a> <em>or send cryptocurrencies
+to</em></p>
+<hr>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted -->
+<a href="https://twitter.com/@mobilehaskell"><strong>Mobile Haskell (@mobilehaskell) |
+Twitter</strong>\\<br>
+/The latest Tweets from Mobile Haskell (@mobilehaskell). Advances in
+using Haskell for mobile development Tweets
+by&hellip;/twitter.com</a>[[<a href="https://twitter.com/@mobilehaskell">https://twitter.com/@mobilehaskell</a>][]]</p>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted -->
+<a href="https://twitter.com/@zw3rktech"><strong>zw3rk (@zw3rktech) | Twitter</strong>\\<br>
+/The latest Tweets from zw3rk (@zw3rktech). your friendly haskell
+consultants/twitter.com</a>[[<a href="https://twitter.com/@zw3rktech">https://twitter.com/@zw3rktech</a>][]]</p>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted -->
+<a href="https://twitter.com/@angerman%5Fio"><strong>Moritz Angermann (@angerman_io) |
+Twitter</strong>\\<br>
+/The latest Tweets from Moritz Angermann (@angerman_io). Type masseur.
+Singapore/twitter.com</a>[[<a href="https://twitter.com/@angerman%5Fio">https://twitter.com/@angerman%5Fio</a>][]]</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2018-02-what-is-new-in-cross-compiling-haskell/" class="left arrow">&#8592;</a>
+		<a href="/posts/2018-03-what-is-new-in-cross-compiling-haskell/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-04-13 13:01:48.441073 &#43;0800 &#43;08 m=&#43;0.079042481">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

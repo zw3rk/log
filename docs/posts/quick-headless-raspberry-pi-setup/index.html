@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>Quick Headless Raspberry Pi Setup &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-05-10 00:00:00 &#43;0800 &#43;08">May 10, 2017</time>
+</div>
+
+		<h1 class="post-title">Quick Headless Raspberry Pi Setup</h1>
+<div class="post-line"></div>
+
+		
+
+		<p>To run any software on your <a href="http://amzn.to/2qcKh6m">Raspberry Pi</a>, it
+clearly needs to be set up. However, without an HDMI capable device or a
+USB keyboard we won&rsquo;t get anywhere without a headless setup. You will
+need a DHCP capable router, a <a href="http://amzn.to/2qcKh6m">Raspberry Pi</a>,
+a <a href="http://amzn.to/2qcTxY4">SD card</a>, and a
+<a href="http://amzn.to/2qO1X5f">SD card reader/writer</a> (if you computer
+doesn&rsquo;t already provide one).</p>
+<p>We&rsquo;ll use <a href="https://www.raspberrypi.org/downloads/raspbian/">Raspbian
+jessie lite</a> and <a href="https://etcher.io/">etcher</a>. Putting Raspbian onto
+the SD card should present no issues. Simply download etcher and
+Raspbian, and follow the etcher instructions.</p>
+<p>Recent versions of Raspbian have disabled access via SSH by default, in
+<a href="https://www.raspberrypi.org/blog/a-security-update-for-raspbian-pixel/">an
+attempt to prevent the proliferation of Raspberry Pis joining botnets</a>.</p>
+<blockquote>
+<p>SSH disabled by default; can be enabled by creating a file with name
+“ssh” in boot partition</p>
+</blockquote>
+<p><em>Source:</em>
+<a href="http://downloads.raspberrypi.org/raspbian/release%5Fnotes.txt"><em>Raspbian
+release notes 2016&ndash;11&ndash;25</em></a></p>
+<p>Thus you will need <code>/boot/ssh</code>; simply touching that file should be
+sufficient.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">touch /Volumes/boot/ssh
+</code></pre></div><p>should do on macOS. <em>Note: if you don&rsquo;t see</em> <code>/Volumnes/boot</code> <em>try
+re-inserting the SD card.</em></p>
+<p>Eject the SD card, and boot up your Raspberry Pi.</p>
+<p>The Raspberry Pi should come up as <code>raspberrypi</code> on your network,
+depending on your setup, logging in via SSH might be as simple as</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">ssh pi@raspberrypi
+</code></pre></div><p>Or you might have to
+<a href="https://www.raspberrypi.org/documentation/remote-access/ssh/unix.md">figure
+out the Raspberry Pis ip address</a> from your router. The default
+password is <strong>raspberry</strong> and you are strongly advised to change it upon
+logging in for the first time using <code>passwd</code>.</p>
+<p>You can now configure your Raspberry Pi to your liking using</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">sudo raspi-config
+</code></pre></div><p>I would also suggest to install any pending updates:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">sudo aptitude update
+sudo aptitude upgrade
+</code></pre></div><p>With all that in place you can enjoy playing with your Raspberry Pi.
+Next we will create a cross compilation toolchain and cross compile
+software to run on the Raspberry Pi.</p>
+<p>&mdash; <!-- raw HTML omitted -->
+If you also have a tontec mz61581 tft display, you might want to add</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">dtparam=spi=on
+dtoverlay=mz61581
+</code></pre></div><p>to your <code>/boot/config.txt</code> and append <code>fbcon=map:10</code> to your
+<code>/boot/cmdline.txt</code> to enable the the display during the boot process.</p>
+<p>You might also need to download the latest
+<a href="https://www.itontec.com/mz61581-overlay.dtb">mz61581-overlay.dbt</a>
+from <a href="https://www.itontec.com">itontec</a> and place it into
+<code>/boot/overlays</code>.</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/cross-compilation-survey-results/" class="left arrow">&#8592;</a>
+		<a href="/posts/making-a-raspbian-cross-compilation-sdk/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-04-13 13:01:48.440696 &#43;0800 &#43;08 m=&#43;0.078665533">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>
