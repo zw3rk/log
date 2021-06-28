@@ -184,7 +184,7 @@ Extern symbol <code>_stg_gc_unpt_r1</code>. And this is what we&rsquo;d end up p
 up in the object file.  This somehow goes wrong.</p>
 <p>Let&rsquo;s look at the broken relocation again: We jump to <code>0x108384658</code> from
 <code>0x10ff99d58</code>, so the relative value in the branch instruction is
-<code>0x108384658 - 0x10ff99d58 = 0xf83EA900</code>. Not the leading <code>0xf</code>?, yes
+<code>0x108384658 - 0x10ff99d58 = 0xf83EA900</code>. Note the leading <code>0xf</code>?, yes
 that&rsquo;s a negative value.  Let&rsquo;s look at it in binary and we see</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">1111 1000 0011 1110 1010 1001 0000 0000
 |         |         |         |       |
