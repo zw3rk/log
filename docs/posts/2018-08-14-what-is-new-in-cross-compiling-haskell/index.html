@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>What is New in Cross Compiling Haskell &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2018-08-14 00:00:00 &#43;0800 &#43;08">August 14, 2018</time>
+</div>
+
+		<h1 class="post-title">What is New in Cross Compiling Haskell</h1>
+<div class="post-line"></div>
+
+		
+
+		<h2 id="july-edition">July Edition</h2>
+<p>In July I&rsquo;ve been playing around a bit more with <code>-target</code>. At this
+point I believe the best solution is to have a minimal <code>ghc</code> that
+doesn&rsquo;t ship with any libraries; and all libraries are built on demand
+per target. We will likely want to pre-build and ship the Runtime
+System Library <code>rts</code> as we do not have a cabal package that would just
+build the <code>rts</code>. You&rsquo;d have to specify the targets for which you want to
+build/include the <code>rts</code>. The drawback is that you&rsquo;d need the (partial)
+target toolchain to build the <code>rts</code> for all the bundled =rts=s you want
+to ship.</p>
+<p>On the other side you&rsquo;d likely want to use <code>iserv</code> (e.g. the
+<code>-fexternal-interpreter</code>), with which I&rsquo;ve just recently run into some
+strange behaviour while compiling test-suites for packages, where the
+<code>iserv</code> process complains about code that is loaded multiple times. I&rsquo;m
+currently exploring how we can get proper test-coverage for libraries,
+and maybe even <code>ghc</code> in a cross compiled setting.</p>
+<p>A few bugs were fixed, the <code>-staticlib</code> argument now doesn&rsquo;t fail if the
+object files in the archives it&rsquo;s trying to concatenate are of
+odd-length; GHC doesn&rsquo;t PANIC anymore when <code>-jN</code>, <code>N&gt;1</code> is used and it
+fails to find/load a library.</p>
+<p>I&rsquo;ve also updated the relevant llvmng code to work with ghc8.6. I&rsquo;ve
+had to retract the performance improvement though; as it kept
+producing invalid binaries occasionally and I haven&rsquo;t found the reason
+yet. As such I&rsquo;m probably going to rent some compute time on AWS or
+similar service to build the cross compiler once the final 8.6.1 hits.</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2018-07-04-what-is-new-in-cross-compiling-haskell/" class="left arrow">&#8592;</a>
+		<a href="/posts/2018-10-09-what-is-new-in-cross-compiling-haskell/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-06-28 18:22:53.452685 &#43;0800 &#43;08 m=&#43;0.057167933">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

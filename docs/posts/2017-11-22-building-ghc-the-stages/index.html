@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>Building GHC: The Stages &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-11-22 00:00:00 &#43;0800 &#43;08">November 22, 2017</time>
+</div>
+
+		<h1 class="post-title">Building GHC: The Stages</h1>
+<div class="post-line"></div>
+
+		
+
+		<p>In <a href="https://medium.com/@zw3rk/building-ghc-the-package-database-50c37cf6ce33">part one</a> we learned about the package database.  <a href="https://medium.com/@zw3rk/building-ghc-the-tools-3d170a4db06c">Part two</a> then
+introduced the tools and programs built when building GHC. In this
+part we will look at how the actual stages are built. I will not go
+into the detail of the make based build system, but try to give an
+overall understanding what is happening conceptually.</p>
+<p>To build GHC usually involves running:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">./boot                                   (1)
+./configure --prefix=/usr/opt            (2)
+make -j                                  (3)
+make install                             (4)
+</code></pre></div><p>Let&rsquo;s break down what is happening here: running =./boot= generates
+<code>ghc.mk</code> make files throughout the source tree unless the folder already
+contains one. It also runs <code>autoreconf</code> where necessary (e.g. if there
+exists a <code>configure.ac</code> file, <code>autoreconf</code> is run to turn those into
+<code>configure</code> scripts for the respective libraries).</p>
+<p>The next step, running =./configure= (which can be take a few
+parameters, see =./configure &ndash;help=) runs a battery of detection
+functions to collect information about the machine GHC is built
+on. This includes but is not limited to paths to tools, the
+architecture, operating system, if the system builds Position
+Independent Executables by default, and more. The collected results
+will then be substituted in =.in= files in the build system producing
+files without the =.in= extension where those values are embedded
+(e.g. turns <code>settings.in</code> into <code>settings</code>).</p>
+<p>At this point we now have primed the source tree to contain the
+necessary build (and possibly target specific) information to be used
+throughout building GHC.</p>
+<p><code>make</code> will then run the make build system to produce <code>ghc</code>, the package
+database to be shipped with <code>ghc</code> and other utilities (e.g. <code>ghc-pkg</code>).</p>
+<p>Finally <code>make install</code> will move those into place, which would be
+<code>/usr/opt</code> in the example above. At this point the GHC build system is
+done.</p>
+<hr>
+<p>With that out the door, let&rsquo;s take a closer look what <code>make</code> actually
+does. GHC is built in <strong>stages</strong>. And there are usually three stages
+involved. We build the <em>stage 1 compiler</em> with the <em>stage 0 compiler</em>, and
+the <em>stage 2 compiler</em> with the <em>stage 1 compiler</em>.</p>
+<p>Stage 0 is the <em>bootstrap stage</em>. The bootstrap stage is built by the
+<em>bootstrap ghc</em> this is the GHC that is already present on the system.
+The bootstrap ghc comes with it&rsquo;s package database that was installed
+when the bootstrap compiler was installed.</p>
+<h2 id="building-the-stage-1-compiler">Building the stage 1 compiler</h2>
+<p>As the compiler quite often depends on features of libraries it
+depends on that are not guaranteed to be new enough in the bootstrap
+compilers package database, the first step is to augment the bootstrap
+compilers package database with those required packages to build the
+Stage 1 compiler. To do this, we compile this set of <em>bootstrap
+packages</em> with the bootstrap compiler.</p>
+<figure>
+    <img src="https://cdn-images-1.medium.com/max/800/1*Yy35bpqSR%5FejoxMut0J6yA.png"
+         alt="Figure 1: My stage0 package database."/> <figcaption>
+            <p>Figure 1: My stage0 package database.</p>
+        </figcaption>
+</figure>
+
+<p><em>Note: my stage 0 package database contains the</em> <code>data-bitcode-*</code> <em>packages
+which make up my</em> <code>llvm-ng</code> <em>backend.</em></p>
+<p>From the <code>base</code> version <code>4.10.0.0</code> we can infer that this is likely the
+package database that was shipped with ghc <code>8.2.1</code>.</p>
+<p>The <code>ghc-8.3</code> package will not be in the package database initially,
+however we can see that all it&rsquo;s dependencies are part of the package
+database. As such building the actual <code>ghc</code> executable with the
+<em>bootstrap compiler</em> is now possible. So we move on to build <code>ghc</code>,
+<code>ghc-pkg</code>, <code>hsc2hs</code> and other tools with the <em>bootstrap compiler</em>. These
+together with the the augmented bootstrap package database constitute
+the <em>stage 1</em> now.</p>
+<h2 id="building-the-stage-2-compiler">Building the stage 2 compiler</h2>
+<p>With the <em>stage 1</em> compiler, and the augmented bootstrap package
+database, we proceed by compiling all libraries that ship with GHC and
+register them in the <em>stage 1 package database</em> (these are packages
+built <em>with</em> the <em>stage 1 compiler</em>). And we finally build the <code>ghc</code> with
+the <em>stage 1 compiler</em> as well as other utilities we want to ship with
+the <em>stage 2 compiler</em>.</p>
+<figure>
+    <img src="https://cdn-images-1.medium.com/max/800/1*2UOLozz3AUW60NBmzR2-4g.png"
+         alt="Figure 2: My stage1 package database."/> <figcaption>
+            <p>Figure 2: My stage1 package database.</p>
+        </figcaption>
+</figure>
+
+<p>We could now iterate this process again and obtain a <em>stage 3 compiler</em>
+built with the <em>stage 2 compiler</em>, or go on and build and register
+additional packages into the <em>stage 1 package database</em> with the <em>stage 2
+compiler.</em> I hope the idea and approach should be sufficiently
+illustrated at this point.</p>
+<blockquote>
+<p>So why did we need to build the compiler <em>twice</em>, wouldn&rsquo;t the <em>stage 1
+compiler</em> and the <em>stage 1 package database</em> have been enough?  That&rsquo;s
+a good question! We need to build the <em>stage 2 compiler</em> with the
+<em>stage 1 compiler</em> using the <em>stage 1 package database</em> (the one we will
+ship with the <em>stage 2 compiler</em>). As such, the compiler is built with
+the identical libraries that it ships with. When running /
+interpreting byte code, we need to dynamically link packages and
+this way we can guarantee that the packages we link are identical to
+the ones the compiler was built with. This it is also the reason why
+we don&rsquo;t have GHCi or Template Haskell support in the <em>stage 1
+compiler</em>.</p>
+</blockquote>
+<h2 id="a-binary-distribution">A binary distribution</h2>
+<p>To build a binary distribution from our final <em>stage 2 compiler</em> we only
+need the <code>ghc</code> (built with the <em>stage 1 compiler</em> which was built with the
+<em>bootstrap compiler</em>) together with the <em>stage 1 package database</em> (built
+with the <em>stage 1 compiler</em>). There is some additional packaging logic,
+which I will not go into, but only mention: we package an additional
+<code>configure</code> script to adapt the system on which GHC will ultimately be
+installed, and make sure the wrapper scripts around GHC all contain
+the correct absolute paths, and additional files (e.g.  <code>settings</code>) are
+included in the binary distribution as well.</p>
+<p>This completes this mini series on Building GHC. If you have further
+questions, please ask!</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2017-11-11-building-ghc-the-tools/" class="left arrow">&#8592;</a>
+		<a href="/posts/2017-12-08-what-is-new-in-cross-compiling-haskell/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-06-28 18:22:53.452105 &#43;0800 &#43;08 m=&#43;0.056588154">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

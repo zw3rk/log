@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>A Haskell Cross Compiler for Android &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-05-30 00:00:00 &#43;0800 &#43;08">May 30, 2017</time>
+</div>
+
+		<h1 class="post-title">A Haskell Cross Compiler for Android</h1>
+<div class="post-line"></div>
+
+		
+
+		<p>Over the last two weeks we saw how to build <a href="https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94">a Haskell Cross Compiler
+for Raspberry Pi</a>, set up <a href="https://medium.com/@zw3rk/the-haskell-cabal-and-cross-compilation-e9885fd5e2f">Cabal for Cross Compilation</a>, and how to <a href="https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914">Cross
+Compile Template Haskell</a>. Building a Haskell cross compiler for
+Android is almost identical, with only minor differences.</p>
+<p>For the Raspbian Haskell cross compiler we had a single architecture
+only. Android runs on a plethora of architectures. We will focus on
+arm processors, specifically the 32bit <code>armv7</code> and 64bit <code>aarch64</code>.</p>
+<h2 id="the-android-ndk-and-llvm">The Android NDK &amp; LLVM</h2>
+<p>Google <a href="https://developer.android.com/ndk/downloads/index.html">provides the NDK for Android</a>, which provides a similar set of
+tools as the <a href="https://medium.com/@zw3rk/making-a-raspbian-cross-compilation-sdk-830fe56d75ba">Raspbian Cross Compilation SDK</a> does; it contains the
+Android toolchain and sysroot.</p>
+<p>For GHC we need <code>opt</code> and <code>llc</code> from the llvm 4, which can be obtained
+from their <a href="http://releases.llvm.org/download.html">release download website</a>.</p>
+<h2 id="toolchain-wrapping">Toolchain Wrapping</h2>
+<p>To keep our <code>PATH</code> tidy, and abstract about the Android NDK a bit, we&rsquo;ll
+use a wrapper script that wraps the toolchain and embeds the sysroot.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">#!/bin/bash
+source android-toolchain.config
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">name=${0##*/}
+cmd=${name##*-}
+target=${name%-*}
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">case $name in
+ *-cabal)
+  fcommon=&#34;--builddir=dist/${target}&#34;
+  fcompile=&#34; --with-ghc=${target}-ghc&#34;
+  fcompile+=&#34; --with-ghc-pkg=${target}-ghc-pkg&#34;
+  fcompile+=&#34; --with-gcc=${target}-clang&#34;
+  fcompile+=&#34; --with-ld=${target}-ld&#34;
+  fcompile+=&#34; --hsc2hs-options=--cross-compile&#34;
+  fconfig=&#34;--disable-shared --configure-option=--host=${target}&#34;
+  case $1 in
+   configure|install) flags=&#34;${fcommon} ${fcompile} ${fconfig}&#34; ;;
+   build)             flags=&#34;${fcommon} ${fcompile}&#34; ;;
+   list|info|update)  flags=&#34;&#34; ;;
+   &#34;&#34;)                flags=&#34;&#34; ;;
+   *)                 flags=$fcommon ;;
+  esac
+  ;;
+ # android (armv7)
+ armv7-linux-androideabi-clang)
+  flags=&#34; --target=${target}&#34;
+  flags+=&#34; --sysroot=${ADR32_SYSROOT}&#34;
+  flags+=&#34; -isysroot ${ADR32_SYSROOT}&#34;
+  ;;
+ armv7-linux-androideabi-ld|armv7-linux-androideabi-ld.gold)
+  flags=&#34; --sysroot=${ADR32_SYSROOT}&#34;
+  flags+=&#34; -L${ADR32_TOOLCHAIN_LIB}&#34;
+  ;;
+ # android (aarch64)
+ aarch64-linux-android-clang)
+  flags=&#34; --target=${target}&#34;
+  flags+=&#34; --sysroot=${ADR64_SYSROOT}&#34;
+  flags+=&#34; -isysroot ${ADR64_SYSROOT}&#34;
+  ;;
+ aarch64-linux-android-ld|aarch64-linux-android-ld.gold)
+  flags=&#34; --sysroot=${ADR64_SYSROOT}&#34;
+  flags+=&#34; -L${ADR64_TOOLCHAIN_LIB}&#34;
+  ;;
+ # default
+ *-nm|*-ar|*-ranlib) ;;
+ *) echo &#34;Unknown command: ${0##*/}&#34; &gt;&amp;2; exit 1;;
+esac
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">case $target in
+ armv7-linux-android*)
+   exec env PATH=&#34;${ADR32_PATH}:${PATH}&#34; $cmd $flags &#34;$@&#34; ;;
+ aarch64-linux-android*)
+   exec env PATH=&#34;${ADR64_PATH}:${PATH}&#34; $cmd $flags &#34;$@&#34; ;;
+ *) exec $cmd $flags &#34;$@&#34; ;;
+esac
+</code></pre></div><p>The <code>wrapper</code> depends on <code>android-toolchain.config</code> which can be obtained
+from the <a href="https://github.com/zw3rk/toolchain-wrapper">zw3rk/toolchain-wrapper</a> repository. <em>The</em>
+<code>android-toolchain.config</code> <em>will likely need minor modifications,
+encoding the location of the NDK.</em></p>
+<p>Next, we will create symbolic links to the wrapper script:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">for target in &#34;armv7-linux-androideabi aarch64-linux-android&#34;; do
+  for command in &#34;clang ld ld.gold nm ar ranlib cabal&#34;; do
+    ln -s wrapper $target-$command
+  done
+done
+</code></pre></div><p>This will produce 14 files (e.g. <code>armv7-linux-androideabi-clang</code>), which
+will point to the <code>wrapper</code>. The wrapper in turn will build up the
+necessary flags to pass to the command, based on the name of the file.
+<em>Note: we assume that</em> <code>ld.bfd</code> <em>and</em> <code>ld.gold</code> <em>accept the same flags.</em></p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>As Android does not ship with iconv by default, and GHC depends on
+iconv, we will need to build it as laid out in <a href="https://medium.com/@zw3rk/building-iconv-for-android-e3581a52668f">building iconv for
+android</a>. Note that you do want to build for both targets: <code>armv7</code> and
+<code>aarch64</code> and you want to build <strong>static</strong> libraries (pass
+<code>--enable-shared=no --enable-static=yes</code> to the <code>configure</code> script).  This
+will ease integrating the library into android studio.</p>
+<p>To build GHC, we need <code>ghc</code> and <code>cabal</code>, as well as <code>alex</code> and <code>happy</code>.  A
+recent GHC version from <a href="http://downloads.haskell.org/~ghc/8.0.2/">downloads.haskell.org</a> should provide <code>ghc</code> and
+<code>cabal</code>. <code>alex</code> and <code>happy</code> can then be installed via <code>cabal</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">cabal install alex happy
+</code></pre></div><p>As with the <a href="https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94">Haskell cross compiler for Raspberry Pi</a>, we need to build
+a newer <code>libffi</code> from source, due to an incompatibility between the
+<em>latest release version</em> of libffi (<em>from 2014</em>), and recent llvm
+versions. With the wrapped toolchain in <code>PATH</code>, building <code>libffi</code> should
+be as simple as:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone https://github.com/libffi/libffi.git
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">cd libffi
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">./autogen.sh
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">CC=&#34;armv7-linux-androideabi-clang&#34; \
+CXX=&#34;armv7-linux-androideabi-clang&#34; \
+        ./configure \
+        --prefix=/path/to/libffi/armv7-linux-androideabi \
+        --host=armv7-linux-androideabi \
+        --enable-static=yes --enable-shared=yes
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">make &amp;&amp; make install
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clean -f -x -d
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">./autogen.sh
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">CC=&#34;aarch64-linux-android-clang&#34; \
+CXX=&#34;aarch64-linux-android-clang&#34; \
+        ./configure \
+        --prefix=/path/to/libffi/aarch64-linux-android \
+        --host=aarch64-linux-android \
+        --enable-static=yes --enable-shared=yes
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">make &amp;&amp; make install
+</code></pre></div><p>This will build and place the <code>libffi</code> header and libraries for <code>armv7</code>
+and <code>aarch64</code> into <code>/path/to/libffi/armv7-linux-androideabi</code> and
+<code>/path/to/libffi/aarch64-linux-android</code>.</p>
+<p>As we will also be using GHCs <code>-staticlib</code> flag. GHC uses <code>libtool</code> for
+<code>-staticlib</code>. As the NDK does not ship <code>libtool</code>, we need a thin
+wrapper. <code>libtool-lite</code> from the <a href="https://github.com/zw3rk/toolchain-wrapper">zw3rk/toolchain-wrapper</a> repository can
+be used instead; it uses <code>ar</code> and <code>ranlib</code> under the hood. We only need to
+create symbolic links pointing to it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">ln -s libtool-lite armv7-linux-androideabi-libtool
+ln -s libtool-lite aarch64-linux-android-libtool
+</code></pre></div><h2 id="building-ghc">Building GHC</h2>
+<p>We need to build GHC for both targets: <code>armv7</code> and <code>aarch64</code>. With <code>ghc</code>,
+<code>alex</code>, <code>happy</code>, and <code>cabal</code> in <code>PATH</code>, as well as our wrapped toolchain:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">export PATH=$HOME/.cabal/bin:$PATH
+export PATH=/path/to/bin/ghc:$PATH
+export PATH=/path/to/wrapped-toolchain:$PATH
+</code></pre></div><p>And a copy of the patched GHC:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone --recursive git://git.haskell.org/ghc.git
+cd ghc
+git remote add zw3rk https://github.com/zw3rk/ghc.git
+git fetch zw3rk
+git checkout zw3rk/my-ghc -b my-ghc
+git submodule update --init --recursive
+</code></pre></div><p>Building GHC for <code>armv7-linux-androideabi</code> and <code>aarch64-linux-android</code>
+should require nothing more than:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text"># set paths
+export PREFIX=/my/prefix
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">export LIBFFI=/path/to/libffi
+export LIBICONV=/path/to/libiconv
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">for target in &#34;armv7-linux-androideabi aarch64-linux-android&#34;; do
+  # Clean up the build tree
+  git clean -x -f -d
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text"># Boot up the build system
+./boot
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text"># Configure a GHC that targets $target
+./configure --target=$target \
+            --prefix=$PREFIX \
+            --disable-large-address-space \
+            --with-iconv-includes=$LIBICONV/$target/include \
+            --with-iconv-libraries=$LIBICONV/$target/lib \
+            --with-system-libffi \
+            --with-ffi-includes=$LIBFFI/$target/include \
+            --with-ffi-libraries=$LIBFFI/$target/lib
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text"># Create a mk/build.mk and set the BuildFlavour to quick-cross
+sed -E &#34;s/^#(BuildFlavour[ ]+= quick-cross)$/\1/&#34; \
+  mk/build.mk.sample &gt; mk/build.mk
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">  # Compile and install ghc
+  make -j &amp;&amp; make install
+done
+</code></pre></div><p>As this builds two cross compilers (for <code>armv7</code> and <code>aarch64</code>), this will
+take approximately 60&ndash;120 minutes, depending on your hardware.  Once
+done, it should have installed <code>armv7-linux-androideabi-ghc</code> and
+<code>aarch64-linux-android-ghc</code> into <code>/my/prefix/bin</code>.</p>
+<h2 id="compiling-hello-world">Compiling Hello World</h2>
+<p>For Android we need to produce a hello world library, and call the
+native code from an Android app.</p>
+<p>The library <code>Lib.hs</code> contains a thin wrapper around <code>hello</code>, and exposes
+a c function: <code>char* hello()</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">module Lib where
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">import Foreign.C (CString, newCString)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">-- | export haskell function @chello@ as @hello@.
+foreign export ccall &#34;hello&#34; chello :: IO CString
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">-- | Tiny wrapper to return a CString
+chello = newCString hello
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">-- | Pristine haskell function.
+hello = &#34;Hello from Haskell&#34;
+</code></pre></div><p>Assuming our Android application lives in <code>/path/to/HelloWorld</code>, we
+create <code>/path/to/HelloWorld/app/hs-libs/armeabi-v7a</code> and
+<code>/path/to/HelloWorld/app/hs-libs/arm64-v8a</code>.</p>
+<p>We will make use of GHCs <code>-staticlib</code> flag has to produce a static
+library that contains the <code>Lib.o</code> as well as all dependencies in a
+single =.a= archive.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">aarch64-linux-android-ghc -odir arm64-v8a -hidir arm64-v8a \
+   -staticlib -liconv -lcharset \
+   -L/path/to/libffi/aarch64-linux-android/lib -lffi \
+   -o /path/to/HelloWorld/app/hs-libs/arm64-v8a/libhs.a \
+   Lib.hs
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">armv7-linux-androideabi-ghc -odir armeabi-v7a -hidir armeabi-v7a \
+   -staticlib -liconv -lcharset \
+   -L/path/to/libffi/armv7-linux-androideabi/lib -lffi \
+   -o /path/to/HelloWorld/app/hs-libs/armeabi-v7a/libhs.a \
+   Lib.hs
+</code></pre></div><p>/Note: The/=-liconv -lcharset= /and/=-L/path/to/libffi&hellip; -lffi=
+<em>arguments are currently necessary, because ghc does not pass them
+properly. The</em> <code>libffi</code> <em>arguments are needed only if GHC is configured
+with</em> =&ndash;with-system-libffi=/./</p>
+<p>We will start out with a fresh new android application with including
+<strong><em>C++</em></strong> and <em>Kotlin</em> support (you can also use Java, the example code will
+be in Kotlin though), with an <em>Empty Activity</em> named <code>MainActivity</code>. For
+C++ use the Default Toolchain, and neither support for <em>exceptions</em> nor
+<em>rtti</em> is needed.</p>
+<p>In the <code>CMakeLists.txt</code> file, we need to tell CMake about our new
+<code>libhs.a</code> and that we want to link against <code>libc</code>.</p>
+<p>Adding the following two <code>find_library</code> statements:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text"># find libc
+find_library( c-lib
+              c )
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text"># find libhs in /path/to/HelloWorld/app/hs-libs/&lt;abi&gt;,
+# outside of cmakes root search path.
+find_library( hs-lib
+              hs
+              PATHS ${PROJECT_SOURCE_DIR}/hs-libs/${ANDROID_ABI}
+              NO_CMAKE_FIND_ROOT_PATH )
+</code></pre></div><p>and including the found libraries in the final <code>target_link_library</code>
+statement</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">target_link_libraries( # Specifies the target library.
+                       native-lib
+
+                       # Links the target library to the log library
+                       # included in the NDK.
+                       ${log-lib}
+                       ${c-lib}
+                       ${hs-lib}
+                       )
+</code></pre></div><p>will instruct CMake to link the <code>native-lib</code> which contains our JNI
+bridge to link against the <code>libhs</code> as well as <code>libc</code>.</p>
+<p>Setting the <code>abiFilters</code> in the <code>app/build.gradle</code> file to</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">android {
+  ...
+  defaultConfig
+    ...
+    ndk {
+      abiFilters &#39;armeabi-v7a&#39;, &#39;arm64-v8a&#39;
+    }
+  }
+  ...
+}
+</code></pre></div><p>will tell Android Studio that we only have <code>armv7</code> and <code>aarch64</code> native
+libraries. Adjusting the <code>native-lib.cpp</code> to read</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">#include &lt;jni.h&gt;
+#include &lt;string&gt;
+
+#ifdef __cplusplus
+extern &#34;C&#34; {
+#endif
+extern void hs_init(int * argc, char ** argv[]);
+extern char* hello(void);
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">JNIEXPORT void
+JNICALL
+Java_com_zw3rk_helloworld_MainActivityKt_initHS(
+        JNIEnv *env,
+        jclass /* klass */) {
+    hs_init(NULL,NULL);
+}
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">JNIEXPORT jstring
+JNICALL
+Java_com_zw3rk_helloworld_MainActivity_stringFromJNI(
+        JNIEnv *env,
+        jobject /* this */) {
+    return env-&gt;NewStringUTF(hello());
+}
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">#ifdef __cplusplus
+}
+#endif
+</code></pre></div><p>will provide the <code>hello</code> prototype, which we can use in the
+<code>stringFromJNI</code> method to call our <code>hello()</code> function. We also have the
+<code>hs_init</code> prototype. This one will initialize the haskell runtime and
+should be called <strong>only once</strong>, <em>prior to calling any haskell function</em>.</p>
+<p>The <code>MainActivity</code> class from the <code>MainActivity.kt</code> then looks like
+this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">external fun initHS()
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">class MainActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        // Example of a call to a native method
+        initHS()
+        val tv = findViewById(R.id.sample_text) as TextView
+        tv.text = stringFromJNI()
+    }
+
+    /**
+     * A native method that is implemented by the &#39;native-lib&#39;
+     * native library, which is packaged with this application.
+     */
+
+    external fun stringFromJNI(): String
+
+    companion object {
+
+        // Used to load the &#39;native-lib&#39; library on
+        // application startup.
+        init {
+            System.loadLibrary(&#34;native-lib&#34;)
+            initHS()
+        }
+    }
+}
+</code></pre></div><p><em>Note: as_ <a href="https://www.reddit.com/r/haskell/comments/6e6fhq/a%5Fhaskell%5Fcross%5Fcompiler%5Ffor%5Fandroid/di98fwi/"><em>pointed out</em></a> <em>by_ </em>/u/gergoerdi on</em><a href="https://reddit.com/u/gergoerdi"></a> <a href="https://www.reddit.com/r/haskell/comments/6e6fhq/a%5Fhaskell%5Fcross%5Fcompiler%5Ffor%5Fandroid/"><em>/r/haskell</em></a> <em>/ <code>onCreate</code>
+/can be called</em> */multiple times/*/. The example code has been updated
+to move/ <code>initHS</code> <em>from</em> <code>onCreate</code> <em>to right after the</em> =loadLibrary=/./</p>
+<p>This is all that is all the source that is needed for our Hello World
+Haskell Android app. The source can be found at
+<a href="https://github.com/zw3rk/hs-android-helloworld">zw3rk/hs-android-helloworld</a>.</p>
+<figure>
+    <img src="https://cdn-images-1.medium.com/max/600/1*XSrHinpQhKfoMH4WLYWXLA.png"
+         alt="Figure 1: Haskell running on an Android device"/> <figcaption>
+            <p>Figure 1: Haskell running on an Android device</p>
+        </figcaption>
+</figure>
+
+<h2 id="hello-from-haskell">Hello from Haskell</h2>
+<p>Finally launching and running the application on the device, we are
+greeted with <strong>Hello from Haskell</strong>.</p>
+<p>While the utility of this application is certainly questionable it
+illustrates the essential steps required to build, link and run an
+android application calling a <em>native</em> haskell function.</p>
+<p>With this we should be well equipped to build the GHCSlave application
+for android next and be able to also cross compile Template Haskell to
+Android.</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2017-05-27-cross-compiling-yesod-to-raspberry-pi/" class="left arrow">&#8592;</a>
+		<a href="/posts/2017-05-31-android-and-template-haskell/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-06-28 18:22:53.45712 &#43;0800 &#43;08 m=&#43;0.061602749">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

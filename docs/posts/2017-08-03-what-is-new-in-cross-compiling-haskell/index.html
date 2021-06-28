@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>What is New in Cross Compiling Haskell &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-08-03 00:00:00 &#43;0800 &#43;08">August 3, 2017</time>
+</div>
+
+		<h1 class="post-title">What is New in Cross Compiling Haskell</h1>
+<div class="post-line"></div>
+
+		
+
+		<h2 id="july-edition">July Edition</h2>
+<p>Sadly I wasn&rsquo;t able to write anything throughout July. I hope I will be
+able to carve out some time this month to write about the new features
+we have been working on.</p>
+<p>The focus has mainly been on making the compilation experience for cross
+compilers as pleasant as possible and figuring out how to build binary
+distributions of GHC cross compilers.</p>
+<p>One of the rather annoying kludges has been the need for the
+<code>libtool-lite</code> script on some platforms; this should be unnecessary
+soon. And while we still need the wrapper file for cabal,
+<a href="https://github.com/haskell/cabal/pull/4617">cabal has learned about</a>
+<code>-staticlib</code>, and <code>new-build</code> can now be used to produce a static
+library of the project (with GHCs that support <code>-staticlib</code>).</p>
+<p>I hope you are excited for the posts to come! As always you can follow
+us here on medium, on <a href="https://github.com/zw3rk">github</a>, or on
+<a href="http://twitter.com/zw3rktech">twitter</a>.</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2017-07-06-what-is-new-in-cross-compiling-haskell/" class="left arrow">&#8592;</a>
+		<a href="/posts/2017-09-05-what-is-new-in-cross-compiling-haskell/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-06-28 18:22:53.447385 &#43;0800 &#43;08 m=&#43;0.051868224">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

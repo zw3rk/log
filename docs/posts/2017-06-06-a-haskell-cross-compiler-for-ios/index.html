@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>A Haskell Cross Compiler for iOS &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-06-06 00:00:00 &#43;0800 &#43;08">June 6, 2017</time>
+</div>
+
+		<h1 class="post-title">A Haskell Cross Compiler for iOS</h1>
+<div class="post-line"></div>
+
+		
+
+		<p>So far we have built <a href="https://medium.com/@zw3rk/a-haskell-cross-compiler-for-raspberry-pi-ddd9d41ced94">a Haskell Cross Compiler for Raspberry Pi</a>, as
+well as <a href="https://medium.com/@zw3rk/a-haskell-cross-compiler-for-android-8e297cb74e8a">a Haskell Cross Compiler for Android</a>. To round this off, we
+will build a cross compiler for iOS as well.</p>
+<p>With the WWDC signaling the end of 32bit devices and the last 32bit
+devices are the <a href="http://jamesdempsey.net/ios-device-summary/">iPad (4th gen) and iPhone 5/iPhone 5C</a>, we will only
+build the 64bit cross compiler. <em>Note that what Apple calls</em> <code>arm64</code> <em>is
+called</em> <code>aarch64</code> <em>elsewhere. This is rather unfortunate.</em></p>
+<h2 id="the-sdk-and-llvm">The SDK &amp; LLVM</h2>
+<p>Apple ships the iOS SDK with Xcode. Hence a recent copy of Xcode from
+the AppStore is required. As Apple does not ship the <code>opt</code> and <code>llc</code>
+with Xcode, and GHC currently requires <code>opt</code> and <code>llc</code> from llvm4, we
+need to obtain a copy from the LLVMs
+<a href="http://releases.llvm.org/download.html">release download website</a> as
+well.</p>
+<h2 id="toolchain-wrapping">Toolchain Wrapping</h2>
+<p>Apple provides the <code>xcrun</code> utility with automatically sets up the
+toolchain for the tools we need. We however will still need to provide
+the target prefixed aliases for better autotools interop. Credit for the
+initial work on setting this up goes to the
+<a href="https://github.com/ghc-ios/ghc-ios-scripts">ghc-ios-scripts</a>, we&rsquo;ll
+use a slightly modified version:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">#!/bin/bash
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">name=${0##*/}
+cmd=${name##*-}
+target=${name%-*}
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">case $name in
+ *-cabal)
+  fcommon=&#34;--builddir=dist/${target}&#34;
+  fcompile=&#34; --with-ghc=${target}-ghc&#34;
+  fcompile+=&#34; --with-ghc-pkg=${target}-ghc-pkg&#34;
+  fcompile+=&#34; --with-gcc=${target}-clang&#34;
+  fcompile+=&#34; --with-ld=${target}-ld&#34;
+  fcompile+=&#34; --hsc2hs-options=--cross-compile&#34;
+  fconfig=&#34;--disable-shared --configure-option=--host=${target}&#34;
+  case $1 in
+   configure|install) flags=&#34;${fcommon} ${fcompile} ${fconfig}&#34; ;;
+   build)             flags=&#34;${fcommon} ${fcompile}&#34; ;;
+   list|info|update)  flags=&#34;&#34; ;;
+   &#34;&#34;)                flags=&#34;&#34; ;;
+   *)                 flags=$fcommon ;;
+  esac
+  ;;
+ aarch64-apple-ios-clang|aarch64-apple-ios-ld)
+  flags=&#34;--sdk iphoneos ${cmd} -arch arm64&#34;
+  cmd=&#34;xcrun&#34;
+  ;;
+ aarch64-apple-ios-*|aarch64-apple-ios-*)
+  flags=&#34;--sdk iphoneos ${cmd}&#34;
+  cmd=&#34;xcrun&#34;
+  ;;
+ x86_64-apple-ios-clang|x86_64-apple-ios-ld)
+  flags=&#34;--sdk iphonesimulator ${cmd} -arch x86_64&#34;
+  cmd=&#34;xcrun&#34;
+  ;;
+ x86_64-apple-ios-*)
+  flags=&#34;--sdk iphonesimulator ${cmd}&#34;
+  cmd=&#34;xcrun&#34;
+  ;;
+ # default
+ *-nm|*-ar|*-ranlib) ;;
+ *) echo &#34;Unknown command: ${0##*/}&#34; &gt;&amp;2; exit 1;;
+esac
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">exec $cmd $flags &#34;$@&#34;
+</code></pre></div><p>The universal <code>wrapper</code> can be obtained from the
+<a href="https://github.com/zw3rk/toolchain-wrapper">zw3rk/toolchain-wrapper</a>
+repository. It contains not only the iOS part above, but also the
+sections for Raspberry Pi and Android and can thus be used for all three
+platforms.</p>
+<p>Again we need to create the target prefixed aliases:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">for target in &#34;aarch64-apple-ios x86_64-apple-ios&#34;; do
+  for command in &#34;clang ld ld.gold nm ar ranlib cabal&#34;; do
+    ln -s wrapper $target-$command
+  done
+done
+</code></pre></div><p>The
+<a href="https://github.com/zw3rk/toolchain-wrapper/blob/master/bootstrap">bootstrap</a>
+script from the
+<a href="https://github.com/zw3rk/toolchain-wrapper">zw3rk/toolchain-wrapper</a>
+repository will generate all aliases for Android, iOS and Raspberry Pi.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>With the toolchain wrapper and aliases in <code>PATH</code> all we need to build
+GHC is <code>ghc</code> and <code>cabal</code>. Using <a href="https://brew.sh">homebrew</a> getting a
+recent enough copy of <code>ghc</code> and <code>llvm-3.7</code> should be as easy as</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">brew install ghc llvm@3.7
+</code></pre></div><p><code>llvm@3.7</code> will install <code>opt-3.7</code> and <code>llc-3.7</code>, which we need for the
+bootstrap compiler. However homebrew installs <code>ghc</code> without the version
+suffixes for <code>llc</code> and <code>opt</code>. This can simply be fixed by replacing</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">(&#34;LLVM llc command&#34;, &#34;llc&#34;),
+(&#34;LLVM opt command&#34;, &#34;opt&#34;)
+</code></pre></div><p>with</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">(&#34;LLVM llc command&#34;, &#34;llc-3.7&#34;),
+(&#34;LLVM opt command&#34;, &#34;opt-3.7&#34;)
+</code></pre></div><p>in the <code>settings</code> file, which in the case of <code>ghc</code> from homebrew is
+located at</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">/usr/local/opt/ghc/lib/ghc-8.0.2/settings
+</code></pre></div><p>We also need <code>alex</code> and <code>happy</code>, which can be installed with <code>cabal</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">cabal install alex happy
+</code></pre></div><p>As we did for Raspberry Pi and Android, we also need libffi for iOS</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone https://github.com/zw3rk/libffi.git
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">cd libffi
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">./autogen.sh
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">CC=&#34;aarch64-apple-ios-clang&#34; \
+CXX=&#34;aarch64-apple-ios-clang&#34; \
+        ./configure \
+        --prefix=/path/to/libffi/aarch64-apple-ios \
+        --host=aarch64-apple-ios \
+        --enable-static=yes --enable-shared=yes
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">make &amp;&amp; make install
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clean -f -x -d
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">./autogen.sh
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">CC=&#34;x86_64-apple-ios-clang&#34; \
+CXX=&#34;x86_64-apple-ios-clang&#34; \
+        ./configure \
+        --prefix=/path/to/libffi/x86_64-apple-ios \
+        --host=x86_64-apple-ios \
+        --enable-static=yes --enable-shared=yes
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">make &amp;&amp; make install
+</code></pre></div><p><em>Note: we need to use the</em>
+<a href="https://github.com/zw3rk/libffi"><em>zw3rk/libffi</em></a> <em>fork for</em> <code>-ios</code>
+<em>support until the</em>
+<a href="https://github.com/libffi/libffi/pull/307"><em>libffi/libffi#307</em></a> /pull
+request has been merged into the official libffi repository. Or a new
+autoconf release (latest 2.69 is from 2012) is cut and widely
+available./</p>
+<h2 id="building-ghc">Building GHC</h2>
+<p>With <code>opt</code> and <code>llc</code> from llvm4,=alex=, and <code>happy</code> in <code>PATH</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">export PATH=$HOME/.cabal/bin:$PATH
+export PATH=/path/to/llvm4/bin:$PATH
+export PATH=/path/to/wrapped-toolchain:$PATH
+</code></pre></div><p>building GHC from the patched <code>my-ghc</code> branch</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone --recursive git://git.haskell.org/ghc.git
+cd ghc
+git remote add zw3rk https://github.com/zw3rk/ghc.git
+git fetch zw3rk
+git checkout zw3rk/my-ghc -b my-ghc
+git submodule update --init --recursive
+</code></pre></div><p>should require nothing more than</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text"># set paths
+export PREFIX=/my/prefix
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">export LIBFFI=/path/to/libffi
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">for target in &#34;aarch64-apple-ios x86_64-apple-ios&#34;; do
+  # Clean up the build tree
+  git clean -x -f -d
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text"># Boot up the build system
+./boot
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text"># Configure a GHC that targets $target
+./configure --target=$target \
+            --prefix=$PREFIX \
+            --disable-large-address-space \
+            --with-system-libffi \
+            --with-ffi-includes=$LIBFFI/$target/include \
+            --with-ffi-libraries=$LIBFFI/$target/lib
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text"># Create a mk/build.mk and set the BuildFlavour to quick-cross
+sed -E &#34;s/^#(BuildFlavour[ ]+= quick-cross)$/\1/&#34; \
+  mk/build.mk.sample &gt; mk/build.mk
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">  # Compile and install ghc
+  make -j &amp;&amp; make install
+done
+</code></pre></div><p>and shiny new <code>aarch64-apple-ios-ghc</code> and <code>x86_64-apple-ios-ghc</code> should
+appear in <code>$PREFIX/bin</code> after 60&ndash;120 minutes, depending on your
+hardware.</p>
+<h2 id="compiling-hello-world">Compiling Hello World</h2>
+<p>Similar to how we built the
+<a href="https://medium.com/@zw3rk/a-haskell-cross-compiler-for-android-8e297cb74e8a">Hello
+World library for Android</a>, we are going to build the same Hello World
+library and wrap it into an iOS application.</p>
+<p>The <code>Lib.hs</code> lirbary with the following code</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">module Lib where
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">import Foreign.C (CString, newCString)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">-- | export haskell function @chello@ as @hello@.
+foreign export ccall &#34;hello&#34; chello :: IO CString
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">-- | Tiny wrapper to return a CString
+chello = newCString hello
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">-- | Pristine haskell function.
+hello = &#34;Hello from Haskell&#34;
+</code></pre></div><p>exports the <code>chello</code> C function, which we will be calling from the iOS
+application to obtain a C string from Haskell. Nothing too exciting yet,
+but it will demonstrate the basic interop.</p>
+<p>Creating a simple <em>Single View Application</em> for <em>iOS</em> using <em>swift</em> with
+Xcode should provide the neccessary Application Template for our Hello
+World application. <em>Using Objective-C would make calling</em> <code>chello</code> /a
+bit easier. However as Apple has been pushing swift for a while now,
+we&rsquo;ll use swift./</p>
+<p>We will need a bridging header to bring the C prototypes into swift. The
+simplest way to do this is to add a new objective c file to the project,
+e.g. <code>tmp.m</code>, which in turn will cause Xcode to ask if it should create
+a bridging header. Answer yes and delete <code>tmp.h</code>. Add the prototypes we
+need to the <code>helloworld-Bridging-Header.h</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">extern void hs_init(int * argc, char ** argv[]);
+extern char * hello();
+</code></pre></div><p>In the <code>AppDelegate.swift</code>, we will call <code>hs_init</code> when the application
+did finish launching:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">func application(_ application: UIApplication,
+  didFinishLaunchingWithOptions launchOptions:
+  [UIApplicationLaunchOptionsKey: Any]?) -&gt; Bool {
+    // Override point for customization after application launch.
+    hs_init(nil,nil)
+    return true
+}
+</code></pre></div><p>Adding a <code>Label</code> to the <code>Main.storyboard</code>, connecting the <code>IBOutlet</code> it
+to the <code>ViewController.swift</code>, and setting it&rsquo;s <code>text</code> property to the
+result of <code>hello</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">class ViewController: UIViewController {
+  @IBOutlet weak var label: UILabel!
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    label.text = String(cString: hello())
+  }
+}
+</code></pre></div><p>should be sufficient. Before we can build and run the application on an
+actual device, we need to build the Haskell library and tell Xcode to
+link against it.</p>
+<p>Compiling into a static libraries for <code>aarch64</code> (device) &amp; <code>x86_64</code>
+(simulator)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">aarch64-apple-ios-ghc -odir arm64 -hidir arm64 \
+   -lffi -L/path/to/libffi/aarch64-apple-ios/lib \
+   -staticlib -o hs-libs/arm64/libhs.a hs/Lib.hs
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">x86_64-apple-ios-ghc -odir x86_64 -hidir x86_64 \
+   -lffi -L/path/to/libffi/x86_64-apple-ios/lib \
+   -staticlib -o hs-libs/x86_64/libhs.a hs/Lib.hs
+</code></pre></div><p>and turning them into a <strong>universal library</strong> with both architectures
+combined</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">lipo -create -output hs-libs/libhs.a \
+  hs-libs/arm64/libhs.a hs-libs/x86_64/libhs.a
+</code></pre></div><p>should provide the <code>libhs.a</code> static library in the <code>hs-libs</code> folder.
+Linking it in Xcode requires to add it, together with <em>libiconv.tbd</em>, to
+the <strong>Link Binary With Libraries</strong> section in the <strong>Build Phases</strong> tab of
+the helloworld project in Xcode. As we can not build bitcode only
+libraries with GHC, we also need to set <strong>Enable Bitcode</strong> in the <strong>Build
+Settings</strong> tab to <strong>No</strong>.</p>
+<p>Finally running the application on the device should present us with</p>
+<figure>
+    <img src="https://cdn-images-1.medium.com/max/800/1*3L%5F6ykur6vEOybbdjQBkgw.png"
+         alt="Figure 1: Haskell running on iOS"/> <figcaption>
+            <p>Figure 1: Haskell running on iOS</p>
+        </figcaption>
+</figure>
+
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2017-06-02-what-is-new-in-cross-compiling-haskell/" class="left arrow">&#8592;</a>
+		<a href="/posts/2017-06-07-ios-and-template-haskell/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-06-28 18:22:53.45702 &#43;0800 &#43;08 m=&#43;0.061503684">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

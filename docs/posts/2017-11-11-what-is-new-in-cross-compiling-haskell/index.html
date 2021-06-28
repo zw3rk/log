@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>What is New in Cross Compiling Haskell &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-11-11 00:00:00 &#43;0800 &#43;08">November 11, 2017</time>
+</div>
+
+		<h1 class="post-title">What is New in Cross Compiling Haskell</h1>
+<div class="post-line"></div>
+
+		
+
+		<h2 id="october-edition">October Edition</h2>
+<p>After the announcement and release of experimental cross compiler
+previews as binary distributions
+<a href="https://medium.com/@zw3rk/what-is-new-in-cross-compiling-haskell-976cd4752bb9">last
+month</a>, it turned out that binary distributions produced by the make
+base build system were not what I had hoped for.</p>
+<p><a href="https://ghc.haskell.org/trac/ghc/wiki/Status/GHC-8.4.1">GHC 8.4.1</a> is
+around the corner (Release in February 2018. Cut release branch in
+November 2017.) and will come with a new
+<a href="http://shakebuild.com">shake</a> based build system called
+<a href="http://github.com/snowleopard/hadrian">hadrian</a>, which has been in
+development for quite some time. The plan &mdash; I believe &mdash; is that the
+make based and the shake based build system will both be with us until
+hopefully the make base one will eventually be dropped.</p>
+<p>After investigating the current make based build system trying to
+produce better cross compiler binary distributions, I bit the bullet and
+went ahead with hadrian.</p>
+<p>This also lead to the first part of a series of posts on how GHCs build
+system works:
+<a href="https://medium.com/@zw3rk/building-ghc-the-package-database-50c37cf6ce33">Building
+GHC: The package database</a>. More of which I plan to write up soon.</p>
+<p>My ideal cross comiler binary distrubion is an compressed archive (zip,
+tar.xz) that contains a <code>bin</code> and <code>lib</code> folder. Simply unpacking it and
+running <code>bin/ghc</code> should be enough (or in the case of a cross compiler
+<code>bin/&lt;arch&gt;-&lt;vendor&gt;-&lt;os&gt;-ghc</code>). This however requires that the
+distribution is relocatable. While we build relocatable builds for
+Windows, we do not for other platforms.</p>
+<p>To achieve this, it would be great if the build system would place the
+package database relocatable into <code>lib</code> and the binaries into <code>bin</code>. All
+that would be needed to build the binary distribution then would be to
+archive and compress those two folders.</p>
+<p>To that extend I&rsquo;ve spent some time patching GHC, Cabal and hadrian to
+make this possible. This has lead to a rather
+<a href="https://github.com/snowleopard/hadrian/pull/445">large hadrian fork</a>.</p>
+<p>I hope this will provide the foundation to provide better binary
+distributions for the cross compilers. As such stay tuned for new binary
+distribution releases and hopefully me getting back to actually cross
+compilation stuff rather than build system logic.</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2017-10-30-building-ghc-the-package-database/" class="left arrow">&#8592;</a>
+		<a href="/posts/2017-11-11-building-ghc-the-tools/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-06-28 18:22:53.449731 &#43;0800 &#43;08 m=&#43;0.054213979">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

@@ -46,7 +46,21 @@
 <main>
 	<div class="catalogue">
 		
-			<a href="https://log.zw3rk.com/posts/2018-08-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2021-06-28-off-by-one/" class="catalogue-item">
+    <div>
+        <time datetime="2021-06-28 00:00:00 &#43;0800 &#43;08" class="catalogue-time">June 28, 2021</time>
+        <h1 class="catalogue-title">The tail of an off-by-one error in GHC&#39;s linker</h1>
+        <div class="catalogue-line"></div>
+
+        <p>
+            This is the story of an odd off-by-one error in GHC&rsquo;s internal static linker for the Mach-O file format on AArch64. This is our beloved macOS/iOS platform!
+For a while we have been observing odd non-deterministic failures in CI. We&rsquo;d see a bunch of test for the aarch64-darwin runner fail, but rarely the same, and if re-run different tests would fail. The only observable correlation was that the failing tests all somehow had to do with iserv, ghc&rsquo;s external interpreter.
+        </p>
+    </div>
+</a>
+
+		
+			<a href="https://log.zw3rk.com/posts/2018-10-09-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2018-10-09 00:00:00 &#43;0800 &#43;08" class="catalogue-time">October 9, 2018</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -60,7 +74,7 @@ For the cross compilation pipeline through the llvm-ng, I&rsquo;ve added binary 
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/2018-07-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2018-08-14-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2018-08-14 00:00:00 &#43;0800 &#43;08" class="catalogue-time">August 14, 2018</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -73,7 +87,7 @@ For the cross compilation pipeline through the llvm-ng, I&rsquo;ve added binary 
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/2018-06-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2018-07-04-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2018-07-04 00:00:00 &#43;0800 &#43;08" class="catalogue-time">July 4, 2018</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -87,7 +101,7 @@ As the 8.6.1 alpha was just announced, I&rsquo;m trying to finish adapting the l
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/2018-05-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2018-06-06-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2018-06-06 00:00:00 &#43;0800 &#43;08" class="catalogue-time">June 6, 2018</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -101,7 +115,7 @@ Interestingly windows suffers from a similar issue. On windows we have a command
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/2018-03-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2018-05-03-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2018-05-03 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 3, 2018</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -116,7 +130,7 @@ I have been making progress on the Windows front to the point where we don&rsquo
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/talk-case-study-cross-compiling-dhall-json/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2018-03-14-talk-case-study-cross-compiling-dhall-json/" class="catalogue-item">
     <div>
         <time datetime="2018-03-14 00:00:00 &#43;0800 &#43;08" class="catalogue-time">March 14, 2018</time>
         <h1 class="catalogue-title">Talk: Case Study: Cross Compiling dhall-json</h1>
@@ -130,7 +144,7 @@ The talk coincided with the release of GHC 8.
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/2018-02-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2018-03-02-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2018-03-02 00:00:00 &#43;0800 &#43;08" class="catalogue-time">March 2, 2018</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -144,7 +158,7 @@ cabal can now be invoked outside of the source folder, and tries to not pollute 
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/2018-01-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2018-02-05-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2018-02-05 00:00:00 &#43;0800 &#43;08" class="catalogue-time">February 5, 2018</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -158,7 +172,7 @@ I&rsquo;ve also managed to write a patch for cabal so that new-build properly pr
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/provisioning-a-nixos-server-from-macos/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2018-01-17-provisioning-a-nixos-server-from-macos/" class="catalogue-item">
     <div>
         <time datetime="2018-01-17 00:00:00 &#43;0800 &#43;08" class="catalogue-time">January 17, 2018</time>
         <h1 class="catalogue-title">Provisioning a NixOS server from macOS</h1>
@@ -171,7 +185,7 @@ I&rsquo;ve also managed to write a patch for cabal so that new-build properly pr
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/talk-building-android-apps-with-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2018-01-12-talk-building-android-apps-with-haskell/" class="catalogue-item">
     <div>
         <time datetime="2018-01-12 00:00:00 &#43;0800 &#43;08" class="catalogue-time">January 12, 2018</time>
         <h1 class="catalogue-title">Talk: Building Android apps with Haskell</h1>
@@ -184,7 +198,7 @@ I&rsquo;ve also managed to write a patch for cabal so that new-build properly pr
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/2017-12-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2018-01-09-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2018-01-09 00:00:00 &#43;0800 &#43;08" class="catalogue-time">January 9, 2018</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -198,7 +212,7 @@ Axis Sivitz has been successful in cross compiling some haskell code using the c
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/contributing-to-ghc/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-12-21-contributing-to-ghc/" class="catalogue-item">
     <div>
         <time datetime="2017-12-21 00:00:00 &#43;0800 &#43;08" class="catalogue-time">December 21, 2017</time>
         <h1 class="catalogue-title">Contributing to GHC</h1>
@@ -211,7 +225,7 @@ Axis Sivitz has been successful in cross compiling some haskell code using the c
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/relocatable-ghc-cross-compiler-binary-distributions/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-12-20-relocatable-ghc-cross-compiler-binary-distributions/" class="catalogue-item">
     <div>
         <time datetime="2017-12-20 00:00:00 &#43;0800 &#43;08" class="catalogue-time">December 20, 2017</time>
         <h1 class="catalogue-title">Relocatable GHC Cross Compiler Binary Distributions</h1>
@@ -225,7 +239,7 @@ Axis Sivitz has been successful in cross compiling some haskell code using the c
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/2017-11-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-12-08-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2017-12-08 00:00:00 &#43;0800 &#43;08" class="catalogue-time">December 8, 2017</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -238,7 +252,7 @@ Axis Sivitz has been successful in cross compiling some haskell code using the c
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/building-ghc-the-stages/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-11-22-building-ghc-the-stages/" class="catalogue-item">
     <div>
         <time datetime="2017-11-22 00:00:00 &#43;0800 &#43;08" class="catalogue-time">November 22, 2017</time>
         <h1 class="catalogue-title">Building GHC: The Stages</h1>
@@ -253,7 +267,7 @@ To build GHC usually involves running:
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/building-ghc-the-tools/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-11-11-building-ghc-the-tools/" class="catalogue-item">
     <div>
         <time datetime="2017-11-11 00:00:00 &#43;0800 &#43;08" class="catalogue-time">November 11, 2017</time>
         <h1 class="catalogue-title">Building GHC: The tools</h1>
@@ -268,7 +282,7 @@ ghc-pkg We saw during getting to know package databases. It is the command line 
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/2017-10-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-11-11-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2017-11-11 00:00:00 &#43;0800 &#43;08" class="catalogue-time">November 11, 2017</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -282,7 +296,7 @@ GHC 8.4.1 is around the corner (Release in February 2018. Cut release branch in 
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/building-ghc-the-package-database/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-10-30-building-ghc-the-package-database/" class="catalogue-item">
     <div>
         <time datetime="2017-10-30 00:00:00 &#43;0800 &#43;08" class="catalogue-time">October 30, 2017</time>
         <h1 class="catalogue-title">Building GHC: The package database</h1>
@@ -297,7 +311,7 @@ Packages While we usually build packages for use with GHC via cabal, the package
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/ghc-cross-compiler-binary-distributions/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-10-20-ghc-cross-compiler-binary-distributions/" class="catalogue-item">
     <div>
         <time datetime="2017-10-20 00:00:00 &#43;0800 &#43;08" class="catalogue-time">October 20, 2017</time>
         <h1 class="catalogue-title">GHC Cross Compiler Binary Distributions</h1>
@@ -311,7 +325,7 @@ A word of caution is in order. /These are rather experimental builds, and realis
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/2017-09-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-10-08-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2017-10-08 00:00:00 &#43;0800 &#43;08" class="catalogue-time">October 8, 2017</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -326,7 +340,7 @@ Herbert Valerio Riedel announced the head.hackage hackage overlay. This allows t
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/2017-08-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-09-05-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2017-09-05 00:00:00 &#43;0800 &#43;08" class="catalogue-time">September 5, 2017</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -340,7 +354,7 @@ The current status of the -fllvmng backend is that it can compile GHC, but fails
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/2017-07-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-08-03-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2017-08-03 00:00:00 &#43;0800 &#43;08" class="catalogue-time">August 3, 2017</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -355,7 +369,7 @@ One of the rather annoying kludges has been the need for the libtool-lite script
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-07-06-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2017-07-06 00:00:00 &#43;0800 &#43;08" class="catalogue-time">July 6, 2017</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -369,7 +383,7 @@ Building a Cross Compiler for iOS  A Haskell Cross Compiler for iOS iOS and Tem
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/ios-and-template-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-06-07-ios-and-template-haskell/" class="catalogue-item">
     <div>
         <time datetime="2017-06-07 00:00:00 &#43;0800 &#43;08" class="catalogue-time">June 7, 2017</time>
         <h1 class="catalogue-title">iOS and Template Haskell</h1>
@@ -384,7 +398,7 @@ With the Haskell Cross Compiler for iOS from yesterday, we will now build the GH
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/a-haskell-cross-compiler-for-ios/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-06-06-a-haskell-cross-compiler-for-ios/" class="catalogue-item">
     <div>
         <time datetime="2017-06-06 00:00:00 &#43;0800 &#43;08" class="catalogue-time">June 6, 2017</time>
         <h1 class="catalogue-title">A Haskell Cross Compiler for iOS</h1>
@@ -398,7 +412,7 @@ With the WWDC signaling the end of 32bit devices and the last 32bit devices are 
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/2017-05-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-06-02-what-is-new-in-cross-compiling-haskell/" class="catalogue-item">
     <div>
         <time datetime="2017-06-02 00:00:00 &#43;0800 &#43;08" class="catalogue-time">June 2, 2017</time>
         <h1 class="catalogue-title">What is New in Cross Compiling Haskell</h1>
@@ -412,7 +426,7 @@ Building a Cross Compiler for Raspberry Pi  Quick Headless Raspberry Pi Setup Ma
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/android-and-template-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-31-android-and-template-haskell/" class="catalogue-item">
     <div>
         <time datetime="2017-05-31 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 31, 2017</time>
         <h1 class="catalogue-title">Android and Template Haskell</h1>
@@ -426,7 +440,7 @@ Prerequisites As we did for the Raspberry Pi, we need to build iserv-proxy and t
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/a-haskell-cross-compiler-for-android/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-30-a-haskell-cross-compiler-for-android/" class="catalogue-item">
     <div>
         <time datetime="2017-05-30 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 30, 2017</time>
         <h1 class="catalogue-title">A Haskell Cross Compiler for Android</h1>
@@ -440,7 +454,7 @@ For the Raspbian Haskell cross compiler we had a single architecture only. Andro
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/cross-compiling-yesod-to-raspberry-pi/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-27-cross-compiling-yesod-to-raspberry-pi/" class="catalogue-item">
     <div>
         <time datetime="2017-05-27 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 27, 2017</time>
         <h1 class="catalogue-title">Cross Compiling Yesod to Raspberry Pi</h1>
@@ -454,7 +468,7 @@ This is supposed to be a case study of cross compiling haskell packages to the R
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/cross-compiling-template-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-25-cross-compiling-template-haskell/" class="catalogue-item">
     <div>
         <time datetime="2017-05-25 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 25, 2017</time>
         <h1 class="catalogue-title">Cross Compiling Template Haskell</h1>
@@ -468,7 +482,7 @@ The External Interpreter GHCs External Interpreter splits GHC into two component
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/template-haskell-and-cross-compilation/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-24-template-haskell-and-cross-compilation/" class="catalogue-item">
     <div>
         <time datetime="2017-05-24 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 24, 2017</time>
         <h1 class="catalogue-title">Template Haskell and Cross Compilation</h1>
@@ -482,7 +496,7 @@ As pointed out yesterday, Template Haskell requires that GHC is able to run the 
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/template-haskell/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-23-template-haskell/" class="catalogue-item">
     <div>
         <time datetime="2017-05-23 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 23, 2017</time>
         <h1 class="catalogue-title">Template Haskell</h1>
@@ -497,7 +511,7 @@ While I believe many have used Template Haskell via aeson, language-c-inline, le
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/ghcs-cross-compilation-pipeline/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-19-ghc-s-cross-compilation-pipeline/" class="catalogue-item">
     <div>
         <time datetime="2017-05-19 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 19, 2017</time>
         <h1 class="catalogue-title">GHC&#39;s Cross Compilation Pipeline</h1>
@@ -511,7 +525,7 @@ In GHC&rsquo;s Compiler Commentary we can see how the front end takes a Haskell 
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/why-use-a-cross-compiler/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-18-why-use-a-cross-compiler/" class="catalogue-item">
     <div>
         <time datetime="2017-05-18 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 18, 2017</time>
         <h1 class="catalogue-title">Why use a Cross Compiler?</h1>
@@ -525,7 +539,7 @@ For those who work in the mobile application space, cross compilation is very li
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/the-haskell-cabal-and-cross-compilation/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-17-the-haskell-cabal-and-cross-compilation/" class="catalogue-item">
     <div>
         <time datetime="2017-05-17 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 17, 2017</time>
         <h1 class="catalogue-title">The Haskell Cabal and Cross Compilation</h1>
@@ -539,7 +553,7 @@ Cabal, cabal-install, cabal and Hackage The *C*ommon *A*rchitecture for *B*uild
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/a-haskell-cross-compiler-for-raspberry-pi/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-16-a-haskell-cross-compiler-for-raspberry-pi/" class="catalogue-item">
     <div>
         <time datetime="2017-05-16 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 16, 2017</time>
         <h1 class="catalogue-title">A Haskell Cross Compiler for Raspberry Pi</h1>
@@ -554,7 +568,7 @@ Prerequisites Make sure you have a ghc and cabal installed.
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/making-a-raspbian-cross-compilation-sdk/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-11-making-a-raspbian-cross-compilation-sdk/" class="catalogue-item">
     <div>
         <time datetime="2017-05-11 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 11, 2017</time>
         <h1 class="catalogue-title">Making a Raspbian Cross Compilation SDK</h1>
@@ -568,7 +582,7 @@ While the Raspberry Pi 2 and Raspberry Pi 3 are armv7 and aarch64 the old Raspbe
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/quick-headless-raspberry-pi-setup/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-10-quick-headless-raspberry-pi-setup/" class="catalogue-item">
     <div>
         <time datetime="2017-05-10 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 10, 2017</time>
         <h1 class="catalogue-title">Quick Headless Raspberry Pi Setup</h1>
@@ -582,7 +596,7 @@ We&rsquo;ll use Raspbian jessie lite and etcher. Putting Raspbian onto the SD ca
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/cross-compilation-survey-results/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-09-cross-compilation-survey-results/" class="catalogue-item">
     <div>
         <time datetime="2017-05-09 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 9, 2017</time>
         <h1 class="catalogue-title">Cross Compilation Survey Results</h1>
@@ -597,7 +611,7 @@ Build architecture is almost exclusively x86_64 (98%), with linux (82%) being tw
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/building-iconv-for-android/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-05-03-building-iconv-for-android/" class="catalogue-item">
     <div>
         <time datetime="2017-05-03 00:00:00 &#43;0800 &#43;08" class="catalogue-time">May 3, 2017</time>
         <h1 class="catalogue-title">Building iconv for Android</h1>
@@ -612,7 +626,7 @@ Building libiconv version 1.15 for aarch64/android on macOS via androids ndk too
 </a>
 
 		
-			<a href="https://log.zw3rk.com/posts/hello-world-a-cross-compilation-survey/" class="catalogue-item">
+			<a href="https://log.zw3rk.com/posts/2017-04-20-hello-world-and-a-cross-compilation-survey/" class="catalogue-item">
     <div>
         <time datetime="2017-04-20 00:00:00 &#43;0800 &#43;08" class="catalogue-time">April 20, 2017</time>
         <h1 class="catalogue-title">Hello World &amp; A Cross Compilation Survey</h1>
@@ -641,7 +655,7 @@ The current state of ghc for mobile development (Android and iOS) via cross comp
         		<footer>
 			
 			<span>
-			&copy; <time datetime="2021-04-13 13:01:48.458319 &#43;0800 &#43;08 m=&#43;0.096288505">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			&copy; <time datetime="2021-06-28 18:22:53.470516 &#43;0800 &#43;08 m=&#43;0.074998348">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
 			</span>
 		</footer>
 

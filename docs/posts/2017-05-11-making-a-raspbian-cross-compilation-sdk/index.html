@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>Making a Raspbian Cross Compilation SDK &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-05-11 00:00:00 &#43;0800 &#43;08">May 11, 2017</time>
+</div>
+
+		<h1 class="post-title">Making a Raspbian Cross Compilation SDK</h1>
+<div class="post-line"></div>
+
+		
+
+		<p>After setting up your <a href="https://medium.com/@zw3rk/quick-headless-raspberry-pi-setup-52ad6dd312c4">Raspberry Pi with Raspbian jessie lite</a>, this
+time we will now create the necessary cross compilation Software
+Development Kit (SDK). The SDK will contain the toolchain, headers and
+libraries to compile binaries compatible with the Raspberry Pi on a
+different (more powerful) machine (e.g. your laptop or desktop
+computer).</p>
+<p>While the <a href="http://amzn.to/2qdnoiW">Raspberry Pi 2</a> and <a href="http://amzn.to/2qdnNCj">Raspberry Pi 3</a> are <code>armv7</code> and <code>aarch64</code> the
+old Raspberry Pi 1 and <a href="http://amzn.to/2pToU8W">Raspberry Zero</a> are <code>armv6</code>; to simplify matters
+<a href="https://www.raspberrypi.org/downloads/raspbian/">Raspbian</a> is compiled for <code>armv6hf+vfpv2</code> to have a single distribution
+supporting all. The target&rsquo;s triple is then <code>arm-none-linux-gnueabihf</code>.</p>
+<p>We will therefore create a SDK targeting <code>armv6</code> and the programs built
+with it should be compatible with all Raspberry Pis. The downside is
+that programs built with this toolchain will not be able to take
+advantage of advanced features only available in the Raspberry Pi 2
+and 3.</p>
+<p>It is instructive to build the SDK by hand to better understand the
+how everything fits together, and be able to make educated adjustments
+to the SDK&rsquo;s toolchain, headers and libraries. For our SDK we will
+focus on <code>clang</code> from the <a href="https://llvm.org">llvm project</a> as our underlying compiler for
+our toolchain as we will later use GHC&rsquo;s LLVM cross compilation
+backend, and want to keep things simple and consistent. You can find a
+<a href="https://github.com/zw3rk/scripts/blob/master/make-sdk">script to build the SDK</a> in our <a href="https://github.com/zw3rk/scripts">zw3rk/scripts</a> GitHub repository.</p>
+<h2 id="the-sdk">The SDK</h2>
+<p>What is a SDK and why do we need one? When compiling on a more powerful
+(or better supported) <em>build</em> machine to a different one, we need a
+<strong>toolchain</strong> that contains a <strong>compiler</strong> that can <em>target</em> the machine
+that will finally <em>host</em> the resulting binary. The toolchain will also
+contain a <strong>linker</strong>, to be able to link object files that are foreign to
+the build machine as well as an <strong>archiver</strong>, and a tool to extract
+symbols from those object files. In addition to the toolchain, we also
+need access to the <strong>headers</strong> and <strong>libraries</strong> on the <em>host</em>, against we
+want to link. Let us start out by creating a folder <code>raspbian-sdk</code> for
+the SDK, with two subfolders <code>prebuilt</code> (which will hold the toolchain)
+and <code>sysroot</code> (which will hold the headers and libraries).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">mkdir -p raspbian-sdk/{prebuilt,sysroot}
+</code></pre></div><h2 id="the-compiler">The Compiler</h2>
+<p>As mentioned above, we&rsquo;ll use <code>clang</code> from the <a href="https://llvm.org">llvm
+project</a> as our compiler. You can obtain a copy from their
+<a href="http://releases.llvm.org/download.html">release download website</a>. At
+the time of writing <em>LLVM 4.0.0</em> is the latest release. <code>clang</code> is a
+multi-target compiler, which means that the same compiler can produce
+object code for different architectures. This can be controlled via the
+<code>--target</code> flag.</p>
+<p>LLVM can be unpacked and installed into <code>raspbian-sdk/prebuilt</code> as
+follows:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">curl -L -O http://releases.llvm.org/4.0.0/clang+llvm-4.0.0-x86_64-apple-darwin.tar.xz
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">xz -d clang+llvm-4.0.0-x86_64-apple-darwin.tar.xz
+tar xf clang+llvm-4.0.0-x86_64-apple-darwin.tar \
+    -C &#34;/path/to/raspbian-sdk/prebuilt&#34; --strip-components=1
+</code></pre></div><p><em>Note: This will install the</em> <code>clang+llvm</code> <em>for macOS, the commands for
+linux would be similar.</em></p>
+<h2 id="the-linker-and-other-utilities">The Linker and Other Utilities</h2>
+<p>With the compiler in hand, we can now produce object files =.o=, but
+when combining multiple object files, these need to be linked together.
+To illustrate this, assume two object files <code>a.o</code> and <code>b.o</code>. Object file
+<code>b.o</code> refers to a function <code>f</code> in <code>a.o</code>. It does so via an external
+symbol reference (by name). The linker will, when combining <code>a.o</code> and
+<code>b.o</code>, look for the symbol with the specified name in <code>a.o</code> and resolve
+the reference.</p>
+<p><a href="https://www.gnu.org/software/binutils/">GNU Binutils</a> provide a suite
+of tools containing not only one <strong>linker</strong> (<em>ld.bfd</em>), but a second more
+modern one (<em>ld.gold</em>) as well. In addition to the linkers, binutils
+also contain an <strong>archiver</strong> <em>(ar)</em>, a <strong>symbol listing tool</strong> (<em>nm</em>), and a
+few other tools. The latest version can be obtained from
+<a href="http://ftp.gnu.org/gnu/binutils/">their ftp server</a>, the latest
+version as of this writing is <em>binutils-2.28</em>.</p>
+<p>As this is a source distribution, you will need to build binutils
+yourself.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">./configure --prefix=&#34;/path/to/raspbian-sdk/prebuilt&#34; \
+            --target=arm-linux-gnueabihf \
+            --enable-gold=yes \
+            --enable-ld=yes \
+            --enable-targets=arm-linux-gnueabihf \
+            --enable-multilib \
+            --enable-interwork \
+            --disable-werror \
+            --quiet
+make &amp;&amp; make install
+</code></pre></div><p>This should configure, compile and install the suite of binutils into
+<code>/path/to/raspbian-sdk/prebuilt</code>. While binutils can be configured to be
+multi-target, I advise against doing so, as it requires passing the
+target to tools when there is ambiguity. This becomes more complicated
+in cases where the tools are called indirectly.</p>
+<h2 id="the-headers-and-libraries">The Headers and Libraries</h2>
+<p>We finally need to get hold of a copy of the headers and libraries from
+the Raspberry Pi. We need those so that the compiler has access to the
+headers and libraries available on the Raspberry Pi. /This also means,
+that if you install new libraries (with their headers), you will need to
+refresh your SDK; make sure to install the/ <code>-dev</code> <em>packages if needed.</em></p>
+<p>To copy the headers and libraries from the Raspberry Pi to the build
+machine, we will use <code>rsync</code>. It is not available by default in raspbian
+jessie lite and needs to be installed:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">ssh pi@raspberrypi &#39;sudo aptitude install -y rsync&#39;
+</code></pre></div><p>With that in place, we can start to copy the data to our build system:</p>
+<p><em>Note: as</em> <a href="https://medium.com/u/e51ad21a2143"><em>Rob van den Bogaard</em></a>
+<em>kindly</em>
+<a href="https://medium.com/@robvandenbogaard/maybe-good-to-note-that-on-osx-the-built-in-rsync-command-doesnt-accept-multiple-remote-source-343773b59d8b"><em>pointed
+out</em></a>/, the/ <code>rsync</code> <em>that comes with macOS Sierra 10.12 does not
+support multiple</em> */remote sources/*/. Using the/ <code>rsync</code> <em>installed
+via</em> <code>brew install rsync</code> <em>however does.</em></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">mkdir sysroot
+rsync -rzLR --safe-links \
+      pi@raspberrypi:/usr/lib/arm-linux-gnueabihf \
+      pi@raspberrypi:/usr/lib/gcc/arm-linux-gnueabihf \
+      pi@raspberrypi:/usr/include \
+      pi@raspberrypi:/lib/arm-linux-gnueabihf \
+      sysroot/
+</code></pre></div><p>Running <code>rsync</code> at a later time again, has the benefit of copying over
+only the new data, to keep your local copy in sync with the one on the
+Raspberry Pi. <em>You should run the</em> <code>rsync</code> <em>command in the</em> <code>sysroot</code>
+<em>folder again, if you installed additional libraries on your Raspberry
+Pi, against which you want to link.</em></p>
+<h2 id="using-the-sdk">Using the SDK</h2>
+<p>Assuming we now have the following structure:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">├── prebuilt
+│   ├── arm-linux-gnueabihf
+│   ├── bin
+│   ├── include
+│   ├── lib
+│   ├── libexec
+│   └── share
+└── sysroot
+    ├── lib
+    └── usr
+</code></pre></div><p><em>(After unpacking</em> <code>clang+llvm</code> <em>into</em> <code>prebuilt</code> <em>and setting</em>
+<code>prebuilt</code> <em>as the target for</em> =binutils=/)/</p>
+<p>We can compile a simple <code>hello.c</code> with the following content</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">#include &lt;stdio.h&gt;
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">int
+main(int argc, char ** argv) {
+  printf(&#34;Hello World!\n&#34;);
+  return 0;
+}
+</code></pre></div><p>via our cross compilation SDK for <code>arm-linux-gnueabihf</code> like so:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">export COMPILER_PATH=sysroot/usr/lib/gcc/arm-linux-gnueabihf/4.9
+./prebuilt/bin/clang --target=arm-linux-gnueabihf \
+                     --sysroot=./sysroot \
+                     -isysroot ./sysroot \
+                     -L${COMPILER_PATH} \
+                     --gcc-toolchain=./prebuilt/bin \
+                     -o hello hello.c
+</code></pre></div><p>Finally copy <code>hello</code> over to the Raspberry Pi</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">scp hello pi@raspberrypi:
+</code></pre></div><p>and execute it</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">ssh pi@raspberrypi ./hello
+</code></pre></div><h2 id="conclusion">Conclusion</h2>
+<p>We have seen that building and using a cross compilation SDK is not as
+simple as <code>clang --target arm-linux-gnueabihf -o hello hello.c</code>, but is
+still something manageable. The tricky part is getting all the compiler
+flags right.</p>
+<p>Luckily we can hide all of them with a simple shell wrapper. Putting</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">#!/bin/bash
+BASE=$(dirname $0)
+SYSROOT=&#34;${BASE}/../../sysroot&#34;
+TARGET=arm-linux-gnueabihf
+COMPILER_PATH=&#34;${SYSROOT}/usr/lib/gcc/${TARGET}/4.9&#34;
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">exec env COMPILER_PATH=&#34;${COMPILER_PATH}&#34; \
+     &#34;${BASE}/clang&#34; --target=${TARGET} \
+                     --sysroot=&#34;${SYSROOT}&#34; \
+                     -isysroot &#34;${SYSROOT}&#34; \
+                     -L&#34;${COMPILER_PATH}&#34; \
+                     --gcc-toolchain=&#34;${BASE}&#34; \
+                     &#34;$@&#34;
+</code></pre></div><p>into <code>prebuilt/bin/arm-linux-gnueabihf-clang</code> and making it executable
+with</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">chmod +x prebuilt/bin/arm-linux-gnueabihf-clang
+</code></pre></div><p>allows us to simply say</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">prebuilt/bin/arm-linux-gnueabihf-clang -o hello hello.c
+</code></pre></div><p>to compile <code>hello.c</code> on our <em>build</em> machine, into an executable that can
+run on the <em>host</em>.</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2017-05-10-quick-headless-raspberry-pi-setup/" class="left arrow">&#8592;</a>
+		<a href="/posts/2017-05-16-a-haskell-cross-compiler-for-raspberry-pi/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-06-28 18:22:53.450966 &#43;0800 &#43;08 m=&#43;0.055449180">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

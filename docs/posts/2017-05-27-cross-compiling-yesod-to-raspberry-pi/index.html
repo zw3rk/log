@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>Cross Compiling Yesod to Raspberry Pi &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-05-27 00:00:00 &#43;0800 &#43;08">May 27, 2017</time>
+</div>
+
+		<h1 class="post-title">Cross Compiling Yesod to Raspberry Pi</h1>
+<div class="post-line"></div>
+
+		
+
+		<p><a href="https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914">As we have seen</a> we can now cross compile Template Haskell. The <a href="http://www.yesodweb.com/">Yesod
+Web Framework</a> is <a href="http://snapframework.com/">one</a> <a href="https://www.spock.li/">o</a>f <a href="http://haskell-servant.readthedocs.io/en/stable/">many</a> haskell web frameworks. By default it
+makes use of <a href="http://hackage.haskell.org/package/shakespeare">shakespeare</a> templates, which happen to use Template
+Haskell.</p>
+<p>This is supposed to be a case study of cross compiling haskell
+packages to the <a href="http://amzn.to/2qb8k10">Raspberry Pi</a>. We will study the issues that can arise
+with this rather recent development and how to mitigate them. It will
+involve updating packages to make use of the new Template Haskell
+facilities and lifting build constraints.</p>
+<h2 id="the-sample-yesod-application">The Sample Yesod Application</h2>
+<p>The application we are trying to compile is a rather simple one from
+the <a href="http://www.yesodweb.com/book">Yesod book</a>. You can follow along with the source from the
+<code>cross-compiling-yesod</code> subfolder in the <a href="https://github.com/zw3rk/medium">zw3rk/medium</a> repository.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone https://github.com/zw3rk/medium.git
+cd medium/cross-compiling-yesod
+</code></pre></div><p>The <code>src/Main.hs</code> looks as follows</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
+import           Yesod
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">data HelloWorld = HelloWorld
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">mkYesod &#34;HelloWorld&#34; [parseRoutes|
+/ HomeR GET
+/page1 Page1R GET
+/page2 Page2R GET
+|]
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">instance Yesod HelloWorld
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">getHomeR :: Handler Html
+getHomeR  = defaultLayout
+            [whamlet|Hello World! &lt;a href=@{Page1R}&gt;Go to page 1!|]
+getPage1R = defaultLayout
+            [whamlet|Page 1 &lt;a href=@{Page2R}&gt;Go to page 2!|]
+getPage2R = defaultLayout
+            [whamlet|Page 2 &lt;a href=@{HomeR}&gt;Go home!|]
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">main :: IO ()
+main = warp 3000 HelloWorld
+</code></pre></div><p>This small example uses Template Haskell with two custom <a href="https://downloads.haskell.org/~ghc/latest/docs/html/users%5Fguide/glasgow%5Fexts.html#template-haskell-quasi-quotation">QuasiQuotes</a>
+<code>parseRoutes</code> and <code>whamlet</code>.</p>
+<h2 id="cross-compiling-to-raspberry-pi">Cross Compiling to Raspberry Pi</h2>
+<p>We will use the <a href="https://medium.com/@zw3rk/the-haskell-cabal-and-cross-compilation-e9885fd5e2f">The Haskell Cross Compilation</a> toolchain with Raspbery
+Pi Slave process as set up in <a href="https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914">Cross Compiling Template Haskell</a> post.</p>
+<p>Let&rsquo;s start simple and see how far we get by installing the
+dependencies:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">arm-linux-gnueabihf-cabal install --dependencies-only --allow-newer
+</code></pre></div><p><em>We need the</em> <code>--allow-newer</code> <em>as we are building with a development
+compiler.</em></p>
+<h2 id="build-type-custom">Build-Type: Custom</h2>
+<p>After a little while this will fail with</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">Failed to install entropy-0.3.7
+Build log ( ~/.cabal/logs/entropy-0.3.7.log ):
+cabal: Entering directory &#39;entropy-0.3.7&#39;
+[1 of 1] Compiling Main             ( entropy-0.3.7/dist/arm-linux-gnueabihf/setup/setup.hs, entropy-0.3.7/dist/arm-linux-gnueabihf/setup/Main.o )
+Linking entropy-0.3.7/dist/arm-linux-gnueabihf/setup/setup ...
+entropy-0.3.7/dist/arm-linux-gnueabihf/setup/setup: entropy-0.3.7/dist/arm-linux-gnueabihf/setup/setup: cannot execute binary file
+cabal: Leaving directory &#39;entropy-0.3.7&#39;
+</code></pre></div><p>for <code>entropy-0.3.7</code> and <code>stm-chans-3.0.0.4</code>. This is the result of
+<code>built-type: custom</code> as discussed in the <a href="https://medium.com/@zw3rk/the-haskell-cabal-and-cross-compilation-e9885fd5e2f">The Haskell Cabal and Cross
+Compilation</a> post.</p>
+<p>A quick inspection of <a href="https://github.com/TomMD/entropy/blob/master/Setup.hs">entropy/Setup.hs</a> reveals that the setup is
+required for haddock and detecting <code>HAVE_RDRAND</code>. It is probably ok to
+try and compile this without the custom setup.  <a href="http://community.haskell.org/~wren/stm-chans/Setup.hs">stm-chans/Setup.hs</a>
+does some haddock setup as well, which we do not need right now.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">cabal get entropy
+cd entropy-*
+sed -i.bak -E &#39;s/([Bb]uild-[Tt]ype:[ ]+)Custom/\1Simple/g&#39; *.cabal
+arm-linux-gnueabihf-cabal install --allow-newer
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">cabal get stm-chans
+cd stm-chans-*
+sed -i.bak -E &#39;s/([Bb]uild-[Tt]ype:[ ]+)Custom/\1Simple/g&#39; *.cabal
+arm-linux-gnueabihf-cabal install --allow-newer
+</code></pre></div><h2 id="hsc2hs-unsupported-directive-in-cross-compilation">hsc2hs: unsupported directive in cross compilation</h2>
+<p>We will also see the <a href="http://hackage.haskell.org/package/zlib">zlib</a> package to fail with:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">Configuring zlib-0.6.1.2...
+Building zlib-0.6.1.2...
+Preprocessing library zlib-0.6.1.2...
+Codec/Compression/Zlib/Stream.hsc:1023
+   directive const_str cannot be handled in cross-compilation mode
+cabal: Leaving directory &#39;zlib-0.6.1.2&#39;
+</code></pre></div><p>The GHC user guide section for the <code>hsc2hs</code> utility lists <code>const_str</code> as
+<a href="http://downloads.haskell.org/~ghc/master/users-guide/utils.html#cross-compilation">not supported in cross-compilation mode</a> as well.</p>
+<p><a href="https://github.com/rwbarton">Reid Barton</a> kindly pointed out <a href="https://ghc.haskell.org/trac/ghc/ticket/9689">#9689</a>, which provides a proper patch to
+<code>zlib</code>, which is much better than this <a href="https://phabricator.haskell.org/D3613">hack</a> to enable <code>const_str</code> in
+<code>hsc2hs</code>.</p>
+<p>Sadly though it looks like the patch has never made it into <code>zlib</code>; I&rsquo;ve
+opened <a href="https://github.com/haskell/zlib/pull/14">pull/#14</a> on behalf of the original authors.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone https://github.com/mobilehaskell/zlib
+(cd zlib &amp;&amp; arm-linux-gnueabihf-cabal install --allow-newer)
+</code></pre></div><p>Should make the <code>zlib</code> package available.</p>
+<h2 id="requires-external-interpreter">Requires External Interpreter</h2>
+<p>A few other packages (th-lift-instances, math-functions, will have
+failed with</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">Failed to install th-lift-instances-0.1.11
+Build log ( ~/.cabal/logs/th-lift-instances-0.1.11.log ):
+cabal: Entering directory &#39;th-lift-instances-0.1.11&#39;
+Configuring th-lift-instances-0.1.11...
+Building th-lift-instances-0.1.11...
+Preprocessing library th-lift-instances-0.1.11...
+[1 of 1] Compiling Instances.TH.Lift ( src/Instances/TH/Lift.hs, dist/arm-linux-gnueabihf/build/Instances/TH/Lift.o )
+ghc: this operation requires -fexternal-interpreter
+cabal: Leaving directory &#39;th-lift-instances-0.1.11&#39;
+</code></pre></div><p>This indicates some Template Haskell compilation is needed. With
+GHCSlave started on the Raspberry Pi at <code>10.0.1.1</code>, we retry this with</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">arm-linux-gnueabihf-cabal install --allow-newer \
+   --ghc-options=&#34;-fexternal-interpreter \
+                  -pgmi $HOME/.cabal/bin/iserv-proxy \
+                  -opti10.0.1.1 -opti5000&#34;
+</code></pre></div><h2 id="requires-file-or-process-io">Requires File or Process IO</h2>
+<p>Next the <code>shakespeare</code> package will fail with</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">Preprocessing library shakespeare-2.0.13...
+[ 1 of 18] Compiling Text.IndentToBrace ( Text/IndentToBrace.hs, dist/arm-linux-gnueabihf/build/Text/IndentToBrace.o )
+[ 2 of 18] Compiling Text.MkSizeType  ( Text/MkSizeType.hs, dist/arm-linux-gnueabihf/build/Text/MkSizeType.o )
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">Text/MkSizeType.hs:7:1: warning: [-Wunused-imports]
+    The import of ‘Language.Haskell.TH’ is redundant
+      except perhaps to import instances from ‘Language.Haskell.TH’
+    To import instances alone, use: import Language.Haskell.TH()
+  |
+7 | import Language.Haskell.TH (conT)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[ 3 of 18] Compiling Text.Shakespeare.Base ( Text/Shakespeare/Base.hs, dist/arm-linux-gnueabihf/build/Text/Shakespeare/Base.o )
+[ 4 of 18] Compiling Text.Shakespeare ( Text/Shakespeare.hs, dist/arm-linux-gnueabihf/build/Text/Shakespeare.o )
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">Text/Shakespeare.hs:237:24: error:
+    Ambiguous occurrence ‘readProcessWithExitCode’
+    It could refer to either
+       ‘Language.Haskell.TH.Syntax.readProcessWithExitCode’,
+    imported from
+       ‘Language.Haskell.TH.Syntax’ at Text/Shakespeare.hs:43:1-33
+    or ‘System.Process.readProcessWithExitCode’,
+    imported from ‘System.Process’ at Text/Shakespeare.hs:63:24-46
+    |
+237 |   (ex, output, err) &lt;- readProcessWithExitCode cmd args input
+    |                        ^^^^^^^^^^^^^^^^^^^^^^^
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">Text/Shakespeare.hs:468:23: error:
+    Ambiguous occurrence ‘getModificationTime’
+    It could refer to either
+       ‘Language.Haskell.TH.Syntax.getModificationTime’,
+    imported from
+       ‘Language.Haskell.TH.Syntax’ at Text/Shakespeare.hs:43:1-33
+    or ‘System.Directory.getModificationTime’,
+    imported from ‘System.Directory’ at Text/Shakespeare.hs:54:26-44
+    |
+468 |     mtime &lt;- qRunIO $ getModificationTime fp
+    |                       ^^^^^^^^^^^^^^^^^^^
+</code></pre></div><p>This is due to the deliberate naming of process and file IO functions
+identical to their <code>System.Process</code> and <code>System.Directory</code> counterparts.
+This way packages that use process or file IO, which likely import
+<code>Language.Haskell.TH.Syntax</code> as well, will fail and can be inspected for
+adjustments.</p>
+<p>After a <a href="https://github.com/mobilehaskell/shakespeare/commit/24c702f1e6caaf629785c926ed0376d33b003f71">minor adjustment</a> to the shakespeare package, similar to the
+adjustments made to <a href="https://github.com/mobilehaskell/file-embed/commit/679b3690e1edf53986ea3af83e99115fdc32b75c">file-embed</a> and <a href="https://github.com/mobilehaskell/gitrev/commit/958f5bf8fd5d16c22f282a96d54ad1f8ddae5240">gitrev</a> <a href="https://medium.com/@zw3rk/cross-compiling-template-haskell-7e38c00c2914">the other day</a>. We can
+install shakespeare as well:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone https://github.com/mobilehaskell/shakespeare.git
+cd shakespeare
+arm-linux-gnueabihf-cabal install --allow-newer \
+   --ghc-options=&#34;-fexternal-interpreter \
+                  -pgmi $HOME/.cabal/bin/iserv-proxy \
+                  -opti10.0.1.1 -opti5000&#34;
+</code></pre></div><h2 id="the-final-stretch">The Final Stretch</h2>
+<p>Returning to compile the dependencies for our Yesod app:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">arm-linux-gnueabihf-cabal install --dependencies-only --allow-newer
+</code></pre></div><p>The <code>http-api-data</code> package will fail with a <code>build-type: custom</code>
+failure. And the <code>yesod</code> package will fail with <em>ambiguous occurrences</em>,
+which require <a href="https://github.com/mobilehaskell/yesod/commit/76cc8918e9b3f5b064b2a679b5ebba17a1e21f80">yet another small adjustment</a>, and install just fine
+after that.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">git clone https://github.com/mobilehaskell/yesod.git
+cd yesod/yesod
+arm-linux-gnueabihf-cabal install --allow-newer \
+   --ghc-options=&#34;-fexternal-interpreter \
+                  -pgmi $HOME/.cabal/bin/iserv-proxy \
+                  -opti10.0.1.1 -opti5000&#34;
+</code></pre></div><h2 id="building-and-running-the-yesod-application-on-raspberry-pi">Building and Running the Yesod Application on Raspberry Pi</h2>
+<p>Finally we are in the position to build out Yesod app now, while this
+was clearly a bit involved, over time (and with patches being
+upstreamed) this will become much easier.</p>
+<p>Building the app now is as simple as</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">arm-linux-gnueabihf-cabal configure
+arm-linux-gnueabihf-cabal build \
+   --ghc-options=&#34;-fexternal-interpreter \
+                  -pgmi $HOME/.cabal/bin/iserv-proxy \
+                  -opti10.0.1.1 -opti5000&#34;
+</code></pre></div><p>Transferring the <code>app</code> binary to the Raspberry Pi and running it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">scp dist/arm-linux-gnueabihf/build/app/app pi@raspberrypi:
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">ssh pi@raspberrypi &#39;LD_LIBRARY_PATH=. ./app&#39;
+</code></pre></div><p>Opening <a href="http://raspberrypi:3000">http://raspberrypi:3000</a> shows the running Yesod instance</p>
+<figure>
+    <img src="https://cdn-images-1.medium.com/max/800/1*PiXJYEkfvP4nu5lxLRXyYg.png"
+         alt="Figure 1: The Haskell Yesod Web Framework running on Raspberry Pi"/> <figcaption>
+            <p>Figure 1: The Haskell Yesod Web Framework running on Raspberry Pi</p>
+        </figcaption>
+</figure>
+
+<h2 id="conclusion">Conclusion</h2>
+<p>We have seen that cross compiling Haskell to Raspberry Pi with
+Template Haskell support is possible. It currently still does require
+a few manual interventions. Those will become unnecessary over time,
+when patches are integrated into the libraries. There has also been
+<a href="https://github.com/haskell/cabal/issues/2327">some progress</a> on lessening the need for <em>build-type: custom</em> when it is
+just needed for <a href="https://github.com/sol/doctest">doctest</a>. If packages can be freed from needing custom
+build types for haddock and doctest, they would be easier to cross
+compile.</p>
+<p>Finally you might have noticed that I moved all the <em>patched</em> packages
+to <a href="https://github.com/mobilehaskell">github.com/mobilehaskell</a>. I&rsquo;d like to invite you to join that
+organisation and publish <em>patched</em> forks there, so that we all can
+benefit, and be able to find the <em>patched</em> packages in a central
+location.</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2017-05-25-cross-compiling-template-haskell/" class="left arrow">&#8592;</a>
+		<a href="/posts/2017-05-30-a-haskell-cross-compiler-for-android/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-06-28 18:22:53.454257 &#43;0800 &#43;08 m=&#43;0.058739892">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>What is New in Cross Compiling Haskell &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2018-02-05 00:00:00 &#43;0800 &#43;08">February 5, 2018</time>
+</div>
+
+		<h1 class="post-title">What is New in Cross Compiling Haskell</h1>
+<div class="post-line"></div>
+
+		
+
+		<h2 id="january-edition">January Edition</h2>
+<p>After setting up <a href="http://hackage.mobilehaskell.org">hackage.mobilehaskell.org</a> with S3 and fastly backing
+<a href="https://medium.com/@zw3rk/what-is-new-in-cross-compiling-haskell-759adaa7e1c">in December</a>, I automated the overlay generation in January. This means
+that any patches pushed to <a href="https://github.com/mobilehaskell/hackage-overlay/">the overlay repository</a> will be
+automatically reflected in the overlay after a few minutes. Now all
+that&rsquo;s missing is patches for common packages!</p>
+<p>I&rsquo;ve also managed to <a href="https://github.com/haskell/cabal/pull/5018">write a patch</a> for <code>cabal</code> so that <code>new-build</code>
+properly propagates <code>--with-PROG</code> flags into dependencies. This should
+make it work much better for cross compilation, once the patch is
+merged. I&rsquo;m hopeful this will happen soon.</p>
+<p>Finally I&rsquo;ve argued for the use (and improved) overlays in the <a href="https://github.com/haskell/ecosystem-proposals/pull/4">SLURP</a>
+and <a href="https://github.com/haskell/ecosystem-proposals/pull/6">Uncurated Hackage Layer</a> proposals, because I believe overlays are
+an underused feature that could provide us with solutions to the
+perceived problems (as I understand them) and offer a unified
+interface.</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2018-01-17-provisioning-a-nixos-server-from-macos/" class="left arrow">&#8592;</a>
+		<a href="/posts/2018-03-02-what-is-new-in-cross-compiling-haskell/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-06-28 18:22:53.451165 &#43;0800 &#43;08 m=&#43;0.055648219">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>

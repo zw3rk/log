@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+		
+		
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>Building iconv for Android &middot; log.zw3rk.com</title>
+
+		
+  		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/fonts.css">
+		
+		<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+		
+		<link href="" rel="alternate" type="application/rss+xml" title="log.zw3rk.com" />
+	</head>
+
+    <body>
+        		<nav class="nav">
+			<div class="nav-container">
+				<a href="/">
+					<h2 class="nav-title">log.zw3rk.com</h2>
+				</a>
+				<ul>
+    
+    
+        <li>
+            <a href="/about/">
+                
+                <span>About</span>
+                
+            </a>
+        </li>
+    
+</ul>
+			</div>
+		</nav>
+
+        
+
+<main>
+	<div class="post">
+		<div class="post-info">
+    <span>Written by</span>
+        Moritz
+        <br>
+        <span>on&nbsp;</span><time datetime="2017-05-03 00:00:00 &#43;0800 &#43;08">May 3, 2017</time>
+</div>
+
+		<h1 class="post-title">Building iconv for Android</h1>
+<div class="post-line"></div>
+
+		
+
+		<p>iconv (<strong>i*nternational *con*version) is provided by <code>libiconv</code>, and
+available through *GHC.IO.Encoding</strong> in the <strong>base</strong> package.</p>
+<p>As this is an external dependency, it needs to be available for a build
+of GHC to succeed. In the case of cross compiling GHC for iOS, we can
+use the <code>libiconv.dylib</code> provided by the iOS sdk. For android however,
+we&rsquo;ll need to build <code>libiconv.so</code>.</p>
+<p>Building <code>libiconv</code> version <code>1.15</code> for <code>aarch64/android</code> on <code>macOS</code> via
+androids ndk toolchain can be done as follows:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">curl -O -L https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.15.tar.gz
+tar xzf libiconv-1.15.tar.gz
+cd libiconv-1.15
+export ANDROID_HOST=aarch64-linux-android
+export ANDROID_BUILD=darwin-x86_64
+export ANDROID_ARCH=arm64
+export ANDROID_NDK=$HOME/Library/Android/sdk/ndk-bundle
+export ANDROID_VERSION=24
+export ANDROID_TOOLCHAIN_VERSION=4.9
+export ANDROID_SYSROOT=$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-$ANDROID_ARCH
+export CFLAGS=--sysroot=$ANDROID_SYSROOT
+export CPPFLAGS=--sysroot=$ANDROID_SYSROOT
+export AR=$ANDROID_HOST-ar
+export RANLIB=$ANDROID_HOST-ranlib
+export PATH=$ANDROID_NDK/toolchains/$ANDROID_HOST-$ANDROID_TOOLCHAIN_VERSION/prebuilt/$ANDROID_BUILD/bin:$PATH
+./configure --host=$ANDROID_HOST --with-sysroot=$ANDROID_SYSROOT
+make
+</code></pre></div><p>Building on linux should be similar.</p>
+<p>A slightly more elaborate script to build <code>libiconv</code> for <code>armv7</code> and
+<code>aarch64</code> can be found in the <code>zw3rk/ghc-build-scripts</code> repository as
+<code>build-libiconv</code>. The script reduces downloading and build <code>libiconv</code>
+for android to:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">./build-libiconv --host=darwin-x86_64 --prefix=libiconv-prefix
+</code></pre></div><p>and places the build products into
+<code>libiconv-prefix/{aarch64-linux-android,arm-linux-androideabi}</code>.</p>
+<p><em>Note: The</em> <code>build-libiconv</code> <em>script builds the static library</em>
+<code>libiconv.a</code> <em>which can be linked into the binary. If you want the
+shared object, change the line that reads</em>
+<code>--enable-shared=no --enable-static=yes</code> <em>into</em>
+=&ndash;enable-shared=yes &ndash;enable-static=yes=/./</p>
+
+
+		
+	</div>
+
+	<div class="pagination">
+		<a href="/posts/2017-04-20-hello-world-and-a-cross-compilation-survey/" class="left arrow">&#8592;</a>
+		<a href="/posts/2017-05-09-cross-compilation-survey-results/" class="right arrow">&#8594;</a>
+
+		<a href="#" class="top">Top</a>
+	</div>
+</main>
+
+
+        		<footer>
+			
+			<span>
+			&copy; <time datetime="2021-06-28 18:22:53.446319 &#43;0800 &#43;08 m=&#43;0.050802669">2021</time> Moritz Angermann. Made with <a href='https://gohugo.io'>Hugo</a> using the <a href='https://github.com/EmielH/tale-hugo/'>Tale</a> theme.
+			</span>
+		</footer>
+
+    </body>
+</html>
