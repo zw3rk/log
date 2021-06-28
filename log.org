@@ -5011,7 +5011,6 @@ the minimal =ghc= distribution working for that first as I believe it
 would make =-target= easier; and require to ship much less libraries.
 
 
-
 ** The tail of an off-by-one error in GHC's linker
    :PROPERTIES:
    :EXPORT_FILE_NAME: 2021-06-28-off-by-one
